@@ -1519,6 +1519,7 @@ export const ja: TranslationResources = {
         hostRequired: "ホストは必須です",
         invalidPort: "ポートは1から65535の間である必要があります",
         invalidConnection: "無効な接続",
+        passwordRequired: "daemon のパスワードを入力してください",
         failedTitle: "接続に失敗しました",
         failedToConnect: "{{endpoint}}への接続に失敗しました。",
         noAdditionalDetails: "{{detail}}（追加の詳細は提供されていません）",

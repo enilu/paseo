@@ -32,26 +32,78 @@ if (-not $env:PASEO_LOCAL_MODELS_DIR) {
     New-Item -ItemType Directory -Force -Path $env:PASEO_LOCAL_MODELS_DIR | Out-Null
 }
 
+$DaemonPort = if ($env:PASEO_DEV_DAEMON_PORT) { $env:PASEO_DEV_DAEMON_PORT } else { "6768" }
+$MetroPort = if ($env:EXPO_PORT) { $env:EXPO_PORT } else { "8081" }
+
+if (-not $env:PASEO_DEV_HOST) {
+    $DefaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" -ErrorAction SilentlyContinue |
+        Where-Object { $_.NextHop -ne "0.0.0.0" } |
+        Sort-Object RouteMetric, InterfaceMetric |
+        Select-Object -First 1
+    if ($DefaultRoute) {
+        $env:PASEO_DEV_HOST = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $DefaultRoute.InterfaceIndex -ErrorAction SilentlyContinue |
+            Where-Object { $_.IPAddress -notlike "169.254.*" } |
+            Select-Object -ExpandProperty IPAddress -First 1
+    }
+}
+
+if (-not $env:PASEO_DEV_HOST) {
+    throw "Unable to detect a LAN address. Set PASEO_DEV_HOST before running npm run dev:win."
+}
+
+if (-not $env:PASEO_PASSWORD) {
+    $LocalEnvPath = Join-Path $ScriptDir "..\.env.local"
+    if (Test-Path $LocalEnvPath) {
+        $PasswordEntry = Get-Content $LocalEnvPath |
+            Where-Object { $_ -match '^\s*PASEO_PASSWORD\s*=' } |
+            Select-Object -Last 1
+        if ($PasswordEntry) {
+            $LocalPassword = ($PasswordEntry -split '=', 2)[1].Trim()
+            if (
+                ($LocalPassword.StartsWith('"') -and $LocalPassword.EndsWith('"')) -or
+                ($LocalPassword.StartsWith("'") -and $LocalPassword.EndsWith("'"))
+            ) {
+                $LocalPassword = $LocalPassword.Substring(1, $LocalPassword.Length - 2)
+            }
+            $env:PASEO_PASSWORD = $LocalPassword
+        }
+    }
+}
+
+if (-not $env:PASEO_PASSWORD) {
+    throw "PASEO_PASSWORD is required for LAN development. Set it in the environment or in .env.local."
+}
+
+if (-not $env:PASEO_LISTEN) {
+    $env:PASEO_LISTEN = "0.0.0.0:$DaemonPort"
+}
+
+if (-not $env:EXPO_PUBLIC_LOCAL_DAEMON) {
+    $env:EXPO_PUBLIC_LOCAL_DAEMON = "$($env:PASEO_DEV_HOST):$DaemonPort"
+}
+
+$env:EXPO_PUBLIC_LOCAL_DAEMON_PASSWORD_REQUIRED = "true"
+
+if (-not $env:PASEO_CORS_ORIGINS) {
+    $env:PASEO_CORS_ORIGINS = "http://localhost:$MetroPort,http://127.0.0.1:$MetroPort,http://$($env:PASEO_DEV_HOST):$MetroPort"
+}
+
 Write-Host @"
 ======================================================
   Paseo Dev (Windows)
 ======================================================
   Home:    $($env:PASEO_HOME)
   Models:  $($env:PASEO_LOCAL_MODELS_DIR)
-  Daemon:  localhost:6768
+  Web:     http://$($env:PASEO_DEV_HOST):$MetroPort
+  Daemon:  $($env:EXPO_PUBLIC_LOCAL_DAEMON)
+  Auth:    password enabled
 ======================================================
 "@
 
-# Allow any origin in dev so Electron on random ports all work.
-# SECURITY: wildcard CORS is unsafe in production — only acceptable here because
-# the daemon binds to localhost and this script is never used for production.
-$env:PASEO_CORS_ORIGINS = "*"
-
-# Configure the app to auto-connect to this daemon on localhost
+# Configure the app to auto-connect to the LAN-reachable development daemon.
 $env:APP_VARIANT = "development"
-$env:EXPO_PUBLIC_LOCAL_DAEMON = "localhost:6768"
 $env:EXPO_PUBLIC_PASEO_DEV_BUILD_LABEL = (git branch --show-current).Trim()
-$env:PASEO_LISTEN = "127.0.0.1:6768"
+$env:EXPO_PORT = $MetroPort
 $env:BROWSER = "none"
 
 # Run both with concurrently

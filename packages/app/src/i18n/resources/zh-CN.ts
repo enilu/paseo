@@ -1488,6 +1488,7 @@ export const zhCN: TranslationResources = {
         hostRequired: "Host 必填",
         invalidPort: "端口必须在 1 到 65535 之间",
         invalidConnection: "无效连接",
+        passwordRequired: "请输入 daemon 密码",
         failedTitle: "连接失败",
         failedToConnect: "无法连接到 {{endpoint}}。",
         noAdditionalDetails: "{{detail}}（未提供更多详情）",

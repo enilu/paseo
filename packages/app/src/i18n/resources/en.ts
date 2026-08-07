@@ -1515,6 +1515,7 @@ export const en = {
         hostRequired: "Host is required",
         invalidPort: "Port must be between 1 and 65535",
         invalidConnection: "Invalid connection",
+        passwordRequired: "Enter the daemon password",
         failedTitle: "Connection failed",
         failedToConnect: "We failed to connect to {{endpoint}}.",
         noAdditionalDetails: "{{detail}} (no additional details provided)",

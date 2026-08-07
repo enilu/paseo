@@ -133,6 +133,7 @@ import {
   WEB_NOTIFICATION_CLICK_EVENT,
   type WebNotificationClickDetail,
 } from "@/utils/os-notifications";
+import { ConfiguredLocalDaemonPasswordGate } from "@/components/configured-local-daemon-password-gate";
 
 polyfillNavigator();
 polyfillCrypto();
@@ -964,6 +965,7 @@ function RuntimeProviders({ children }: { children: ReactNode }) {
   return (
     <HostRuntimeBootstrapProvider>
       <PushNotificationRouter />
+      <ConfiguredLocalDaemonPasswordGate />
       <SidebarCalloutProvider>
         <ProvidersWrapper>{children}</ProvidersWrapper>
       </SidebarCalloutProvider>

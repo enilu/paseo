@@ -1550,6 +1550,7 @@ export const fr: TranslationResources = {
         hostRequired: "Hostest requis",
         invalidPort: "Le port doit être compris entre 1 et 65535",
         invalidConnection: "Connexion invalide",
+        passwordRequired: "Saisissez le mot de passe du daemon",
         failedTitle: "La connexion a échoué",
         failedToConnect: "Nous n'avons pas réussi à nous connecter à{{endpoint}}.",
         noAdditionalDetails: "{{detail}}(aucun détail supplémentaire fourni)",

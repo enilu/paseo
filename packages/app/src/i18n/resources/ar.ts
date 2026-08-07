@@ -1505,6 +1505,7 @@ export const ar: TranslationResources = {
         hostRequired: "مطلوب Host",
         invalidPort: "يجب أن يكون المنفذ بين 1 و65535",
         invalidConnection: "اتصال غير صالح",
+        passwordRequired: "أدخل كلمة مرور daemon",
         failedTitle: "فشل الاتصال",
         failedToConnect: "فشلنا في الاتصال بـ{{endpoint}}.",
         noAdditionalDetails: "{{detail}}(لم يتم تقديم تفاصيل إضافية)",

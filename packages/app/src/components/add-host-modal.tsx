@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useState } from "react";
+import { useCallback, useMemo, useReducer, useRef, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -7,6 +7,7 @@ import { Check, ChevronDown, ChevronRight, Eye, EyeOff, Link2 } from "lucide-rea
 import type { HostProfile } from "@/types/host-connection";
 import { useHosts, useHostMutations } from "@/runtime/host-runtime";
 import {
+  parseHostPort,
   parseConnectionUri,
   serializeConnectionUri,
   serializeConnectionUriForStorage,
@@ -16,6 +17,56 @@ import { AdaptiveModalSheet, AdaptiveTextInput, type SheetHeader } from "./adapt
 import { Button } from "@/components/ui/button";
 
 const FLEX_ONE_STYLE = { flex: 1 } as const;
+
+interface AddHostActionsProps {
+  showCancel: boolean;
+  isSaving: boolean;
+  connectIcon: ReactElement;
+  cancelLabel: string;
+  connectLabel: string;
+  onCancel: () => void;
+  onConnect: () => void;
+}
+
+function createInitialEndpointDraft(
+  endpoint: string | undefined,
+): Pick<DirectConnectionDraft, "host" | "port"> {
+  if (!endpoint) {
+    return { host: "", port: "6767" };
+  }
+  const parsed = parseHostPort(endpoint);
+  return { host: parsed.host, port: String(parsed.port) };
+}
+
+function AddHostActions({
+  showCancel,
+  isSaving,
+  connectIcon,
+  cancelLabel,
+  connectLabel,
+  onCancel,
+  onConnect,
+}: AddHostActionsProps) {
+  return (
+    <View style={styles.actions}>
+      {showCancel ? (
+        <Button style={FLEX_ONE_STYLE} variant="secondary" onPress={onCancel} disabled={isSaving}>
+          {cancelLabel}
+        </Button>
+      ) : null}
+      <Button
+        style={FLEX_ONE_STYLE}
+        variant="default"
+        onPress={onConnect}
+        disabled={isSaving}
+        leftIcon={connectIcon}
+        testID="direct-host-submit"
+      >
+        {connectLabel}
+      </Button>
+    </View>
+  );
+}
 
 interface DirectConnectionDraft {
   host: string;
@@ -281,6 +332,10 @@ export interface AddHostModalProps {
   visible: boolean;
   onClose: () => void;
   onCancel?: () => void;
+  initialEndpoint?: string;
+  lockEndpoint?: boolean;
+  requirePassword?: boolean;
+  showCancel?: boolean;
   onSaved?: (result: {
     profile: HostProfile;
     serverId: string;
@@ -289,7 +344,16 @@ export interface AddHostModalProps {
   }) => void;
 }
 
-export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostModalProps) {
+export function AddHostModal({
+  visible,
+  onClose,
+  onCancel,
+  onSaved,
+  initialEndpoint,
+  lockEndpoint = false,
+  requirePassword = false,
+  showCancel = true,
+}: AddHostModalProps) {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const daemons = useHosts();
@@ -298,8 +362,9 @@ export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostMod
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [host, setHost] = useState("");
-  const [port, setPort] = useState("6767");
+  const initialDraft = createInitialEndpointDraft(initialEndpoint);
+  const [host, setHost] = useState(initialDraft.host);
+  const [port, setPort] = useState(initialDraft.port);
   const [useTls, setUseTls] = useState(false);
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -370,6 +435,10 @@ export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostMod
 
     let connection: PreparedDirectConnection;
     try {
+      if (requirePassword && !password.trim()) {
+        setErrorMessage(t("pairing.direct.errors.passwordRequired"));
+        return;
+      }
       connection = prepareDirectConnection(
         { host, port, useTls, password },
         directConnectionLabels,
@@ -434,6 +503,7 @@ export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostMod
     probeAndUpsertDirectConnection,
     t,
     useTls,
+    requirePassword,
   ]);
 
   const handleSubmitEditing = useCallback(() => {
@@ -510,7 +580,7 @@ export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostMod
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
-            editable={!isSaving}
+            editable={!isSaving && !lockEndpoint}
             returnKeyType="next"
           />
         </View>
@@ -530,7 +600,7 @@ export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostMod
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="number-pad"
-            editable={!isSaving}
+            editable={!isSaving && !lockEndpoint}
             returnKeyType="done"
             onSubmitEditing={handleSubmitEditing}
           />
@@ -540,7 +610,7 @@ export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostMod
       <Pressable
         style={styles.checkboxRow}
         onPress={handleToggleUseTls}
-        disabled={isSaving}
+        disabled={isSaving || lockEndpoint}
         accessibilityRole="checkbox"
         accessibilityLabel={t("pairing.direct.fields.useSsl")}
         accessibilityState={useTlsAccessibilityState}
@@ -631,26 +701,17 @@ export function AddHostModal({ visible, onClose, onCancel, onSaved }: AddHostMod
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       </View>
 
-      <View style={styles.actions}>
-        <Button
-          style={FLEX_ONE_STYLE}
-          variant="secondary"
-          onPress={handleCancel}
-          disabled={isSaving}
-        >
-          {t("pairing.direct.actions.cancel")}
-        </Button>
-        <Button
-          style={FLEX_ONE_STYLE}
-          variant="default"
-          onPress={handleSavePress}
-          disabled={isSaving}
-          leftIcon={connectIcon}
-          testID="direct-host-submit"
-        >
-          {isSaving ? t("pairing.direct.actions.connecting") : t("pairing.direct.actions.connect")}
-        </Button>
-      </View>
+      <AddHostActions
+        showCancel={showCancel}
+        isSaving={isSaving}
+        connectIcon={connectIcon}
+        cancelLabel={t("pairing.direct.actions.cancel")}
+        connectLabel={
+          isSaving ? t("pairing.direct.actions.connecting") : t("pairing.direct.actions.connect")
+        }
+        onCancel={handleCancel}
+        onConnect={handleSavePress}
+      />
     </AdaptiveModalSheet>
   );
 }

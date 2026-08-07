@@ -1515,6 +1515,7 @@ export const ko: TranslationResources = {
         hostRequired: "호스트를 입력하세요",
         invalidPort: "포트는 1에서 65535 사이여야 합니다",
         invalidConnection: "잘못된 연결",
+        passwordRequired: "daemon 비밀번호를 입력하세요",
         failedTitle: "연결 실패",
         failedToConnect: "{{endpoint}}에 연결하지 못했습니다.",
         noAdditionalDetails: "{{detail}} (추가 세부 정보 없음)",
