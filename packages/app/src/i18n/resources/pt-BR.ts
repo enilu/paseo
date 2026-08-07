@@ -1475,6 +1475,7 @@ export const ptBR: TranslationResources = {
         hostRequired: "Host é obrigatório",
         invalidPort: "A porta deve estar entre 1 e 65535",
         invalidConnection: "Conexão inválida",
+        passwordRequired: "Digite a senha do daemon",
         failedTitle: "Falha na conexão",
         failedToConnect: "Não foi possível conectar a {{endpoint}}.",
         noAdditionalDetails: "{{detail}} (nenhum detalhe adicional fornecido)",

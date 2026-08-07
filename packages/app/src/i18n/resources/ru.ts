@@ -1480,6 +1480,7 @@ export const ru: TranslationResources = {
         hostRequired: "Требуется Host",
         invalidPort: "Порт должен быть в диапазоне от 1 до 65535.",
         invalidConnection: "Неверное соединение",
+        passwordRequired: "Введите пароль daemon",
         failedTitle: "Соединение не удалось",
         failedToConnect: "Нам не удалось подключиться к{{endpoint}}.",
         noAdditionalDetails: "{{detail}}(дополнительная информация не предоставлена)",
