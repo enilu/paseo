@@ -391,6 +391,32 @@ describe("appearance settings", () => {
     expect(result.codeFontSize).toBe(DEFAULT_CODE_FONT_SIZE);
     expect(result.syntaxTheme).toBe("one");
     expect(result.toolCallDetailLevel).toBe("detailed");
+    expect(result.customBackground).toBeNull();
+    expect(result.backgroundOpacity).toBe(0.75);
+    expect(result.backgroundBlur).toBe(0);
+  });
+
+  it("loads and clamps custom background appearance settings", async () => {
+    const deps = makeDeps({
+      storage: createInMemoryKeyValueStorage({
+        [APP_SETTINGS_KEY]: JSON.stringify({
+          customBackground: {
+            id: "paseo-custom-background",
+            mimeType: "image/png",
+            storageType: "web-indexeddb",
+            storageKey: "paseo-custom-background",
+            createdAt: 1,
+          },
+          backgroundOpacity: 9,
+          backgroundBlur: 99,
+        }),
+      }),
+    });
+
+    const result = await loadAppSettingsFromStorage(deps);
+    expect(result.customBackground?.id).toBe("paseo-custom-background");
+    expect(result.backgroundOpacity).toBe(1);
+    expect(result.backgroundBlur).toBe(20);
   });
 
   it("migrates the enabled compact tool call preference to overview", async () => {

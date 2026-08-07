@@ -67,6 +67,8 @@ function makeInput(overrides: Partial<AppearanceInput> = {}): AppearanceInput {
     uiFontSize: 16,
     codeFontSize: 12,
     syntaxTheme: "one",
+    customBackgroundEnabled: false,
+    backgroundOpacity: 0.75,
     ...overrides,
   };
 }

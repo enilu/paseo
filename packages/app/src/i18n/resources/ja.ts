@@ -1954,6 +1954,27 @@ export const ja: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "カスタム背景",
+        configured: "背景画像が有効です",
+        notConfigured: "背景画像が設定されていません",
+        description:
+          "20 MB以下のPNG、JPEG、WebPに対応しています。画像はこの端末内にのみ保存されます。",
+        choose: "画像を選択",
+        replace: "画像を変更",
+        remove: "削除",
+        opacity: "背景の不透明度",
+        opacityHint: "インターフェースの背後に表示する画像の強さ（20～100%）",
+        blur: "背景のぼかし",
+        blurHint: "インターフェースの背後にある画像をぼかします（0～20 px）",
+        errorTitle: "カスタム背景",
+        errors: {
+          "unsupported-type": "PNG、JPEG、WebP画像を選択してください。",
+          "too-large": "20 MB未満の画像を選択してください。",
+          saveFailed: "背景画像を保存できませんでした。",
+          removeFailed: "背景画像を削除できませんでした。",
+        },
+      },
       theme: {
         title: "テーマ",
         accessibilityLabel: "テーマ: {{value}}",

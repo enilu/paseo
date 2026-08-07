@@ -20,6 +20,45 @@ export interface AppearanceInput {
   uiFontSize: number; // already clamped
   codeFontSize: number; // already clamped
   syntaxTheme: SyntaxThemeId;
+  customBackgroundEnabled: boolean;
+  backgroundOpacity: number;
+}
+
+function withAlpha(color: string, alpha: number): string {
+  const match = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(color);
+  if (!match) {
+    return color;
+  }
+  return `rgba(${Number.parseInt(match[1], 16)}, ${Number.parseInt(match[2], 16)}, ${Number.parseInt(match[3], 16)}, ${alpha})`;
+}
+
+function resolveSurfaceColors(
+  key: (typeof ALL_THEME_KEYS)[number],
+  enabled: boolean,
+  backgroundOpacity: number,
+) {
+  const colors = REGISTERED_THEMES[key].colors;
+  if (!enabled) {
+    return {
+      surface0: colors.surface0,
+      surface1: colors.surface1,
+      surface2: colors.surface2,
+      surfaceSidebar: colors.surfaceSidebar,
+      surfaceSidebarHover: colors.surfaceSidebarHover,
+      surfaceWorkspace: colors.surfaceWorkspace,
+      background: colors.background,
+    };
+  }
+  const strength = Math.min(1, Math.max(0.2, backgroundOpacity));
+  return {
+    surface0: withAlpha(colors.surface0, 0.92 - 0.62 * strength),
+    surface1: withAlpha(colors.surface1, 0.94 - 0.45 * strength),
+    surface2: withAlpha(colors.surface2, 0.96 - 0.28 * strength),
+    surfaceSidebar: withAlpha(colors.surfaceSidebar, 0.93 - 0.52 * strength),
+    surfaceSidebarHover: withAlpha(colors.surfaceSidebarHover, 0.96 - 0.34 * strength),
+    surfaceWorkspace: withAlpha(colors.surfaceWorkspace, 0.92 - 0.62 * strength),
+    background: withAlpha(colors.background, 0.92 - 0.62 * strength),
+  };
 }
 
 /**
@@ -74,22 +113,35 @@ export function applyAppearance(input: AppearanceInput): void {
       const fontFamily = { ui, mono };
       const fontSize = scaleFontSize(input.uiFontSize, input.codeFontSize);
       const lineHeight = { ...t.lineHeight, diff: diffLineHeight };
+      const surfaceColors = resolveSurfaceColors(
+        key,
+        input.customBackgroundEnabled,
+        input.backgroundOpacity,
+      );
       if (t.colorScheme === "light") {
         return {
           ...t,
           fontFamily,
           fontSize,
           lineHeight,
-          colors: { ...t.colors, syntax: resolveSyntaxColors(input.syntaxTheme, t.colorScheme) },
-        };
+          colors: {
+            ...t.colors,
+            ...surfaceColors,
+            syntax: resolveSyntaxColors(input.syntaxTheme, t.colorScheme),
+          },
+        } as typeof t;
       }
       return {
         ...t,
         fontFamily,
         fontSize,
         lineHeight,
-        colors: { ...t.colors, syntax: resolveSyntaxColors(input.syntaxTheme, t.colorScheme) },
-      };
+        colors: {
+          ...t.colors,
+          ...surfaceColors,
+          syntax: resolveSyntaxColors(input.syntaxTheme, t.colorScheme),
+        },
+      } as typeof t;
     });
   }
 

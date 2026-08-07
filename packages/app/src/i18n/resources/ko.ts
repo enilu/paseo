@@ -1950,6 +1950,27 @@ export const ko: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "사용자 지정 배경",
+        configured: "배경 이미지가 활성화됨",
+        notConfigured: "배경 이미지 없음",
+        description:
+          "20MB 이하의 PNG, JPEG 또는 WebP를 지원합니다. 이미지는 이 기기에만 저장됩니다.",
+        choose: "이미지 선택",
+        replace: "이미지 변경",
+        remove: "제거",
+        opacity: "배경 불투명도",
+        opacityHint: "인터페이스 뒤에 표시되는 이미지의 강도(20~100%)",
+        blur: "배경 흐림",
+        blurHint: "인터페이스 뒤의 이미지를 부드럽게 흐립니다(0~20px)",
+        errorTitle: "사용자 지정 배경",
+        errors: {
+          "unsupported-type": "PNG, JPEG 또는 WebP 이미지를 선택하세요.",
+          "too-large": "20MB보다 작은 이미지를 선택하세요.",
+          saveFailed: "배경 이미지를 저장할 수 없습니다.",
+          removeFailed: "배경 이미지를 제거할 수 없습니다.",
+        },
+      },
       theme: {
         title: "테마",
         accessibilityLabel: "테마: {{value}}",

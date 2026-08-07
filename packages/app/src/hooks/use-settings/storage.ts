@@ -17,6 +17,14 @@ import {
 import { THEME_OPTIONS, type ThemePreference } from "@/styles/theme";
 import { z } from "zod";
 import { readValidatedJson } from "@/storage/validated-storage";
+import type { AttachmentMetadata } from "@/attachments/types";
+import {
+  DEFAULT_BACKGROUND_BLUR,
+  DEFAULT_BACKGROUND_OPACITY,
+  parseBackgroundBlur,
+  parseBackgroundOpacity,
+  parseCustomBackgroundAttachment,
+} from "@/custom-background/model";
 
 export const APP_SETTINGS_KEY = "@paseo:app-settings";
 export const APP_SETTINGS_QUERY_KEY = ["app-settings"];
@@ -53,6 +61,9 @@ export const MAX_FONT_FAMILY_LENGTH = 200;
 
 export interface AppSettings {
   theme: ThemePreference;
+  customBackground: AttachmentMetadata | null;
+  backgroundOpacity: number;
+  backgroundBlur: number;
   language: AppLanguage;
   sendBehavior: SendBehavior;
   serviceUrlBehavior: ServiceUrlBehavior;
@@ -90,6 +101,9 @@ const SidebarRowItemsSchema = z.strictObject({
 
 const StoredAppSettingsSchema = z.strictObject({
   theme: ThemePreferenceSchema.optional(),
+  customBackground: z.unknown().optional(),
+  backgroundOpacity: z.unknown().optional(),
+  backgroundBlur: z.unknown().optional(),
   language: z
     .enum(["system", "ar", "en", "es", "fr", "ja", "ko", "pt-BR", "ru", "zh-CN"])
     .optional(),
@@ -122,6 +136,9 @@ type StoredAppSettings = z.infer<typeof StoredAppSettingsSchema>;
 
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   theme: "auto",
+  customBackground: null,
+  backgroundOpacity: DEFAULT_BACKGROUND_OPACITY,
+  backgroundBlur: DEFAULT_BACKGROUND_BLUR,
   language: "system",
   sendBehavior: "interrupt",
   serviceUrlBehavior: "ask",
@@ -331,6 +348,18 @@ function pickEnumAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
 function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   const result: Partial<AppSettings> = {};
   Object.assign(result, pickEnumAppSettings(stored));
+  const customBackground = parseCustomBackgroundAttachment(stored.customBackground);
+  if (customBackground !== null) {
+    result.customBackground = customBackground;
+  }
+  const backgroundOpacity = parseBackgroundOpacity(stored.backgroundOpacity);
+  if (backgroundOpacity !== null) {
+    result.backgroundOpacity = backgroundOpacity;
+  }
+  const backgroundBlur = parseBackgroundBlur(stored.backgroundBlur);
+  if (backgroundBlur !== null) {
+    result.backgroundBlur = backgroundBlur;
+  }
   if (stored.sidebarRowItems !== undefined) {
     result.sidebarRowItems = parseSidebarRowItems(stored.sidebarRowItems);
   }
