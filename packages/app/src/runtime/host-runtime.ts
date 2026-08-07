@@ -25,6 +25,11 @@ import {
   normalizeHostPort,
   shouldUseTlsForDefaultHostedRelay,
 } from "@/utils/daemon-endpoints";
+import {
+  getConfiguredLocalDaemonEndpoint,
+  hasConfiguredLocalDaemonPassword,
+  isConfiguredLocalDaemonPasswordRequired,
+} from "@/runtime/configured-local-daemon";
 import { resolveAppVersion } from "@/utils/app-version";
 import { ConnectionOfferSchema, type ConnectionOffer } from "@getpaseo/protocol/connection-offer";
 import { shouldUseDesktopDaemon } from "@/desktop/daemon/desktop-daemon";
@@ -1345,13 +1350,8 @@ export function readInitialDaemonConnectionHint(input?: {
   return result.success ? result.data : null;
 }
 
-function readConfiguredLocalDaemonOverride(): string | null {
-  const value = process.env.EXPO_PUBLIC_LOCAL_DAEMON?.trim();
-  return value && value.length > 0 ? value : null;
-}
-
 export function hasConfiguredLocalDaemonOverride(): boolean {
-  return readConfiguredLocalDaemonOverride() !== null;
+  return getConfiguredLocalDaemonEndpoint() !== null;
 }
 
 function isPlaceholderServerId(serverId: string): boolean {
@@ -1446,7 +1446,7 @@ export class HostRuntimeStore {
   }
 
   private async runBoot(): Promise<void> {
-    const override = readConfiguredLocalDaemonOverride();
+    const override = getConfiguredLocalDaemonEndpoint();
     await this.loadFromStorage();
     this.markHostRegistryLoaded();
 
@@ -1475,6 +1475,12 @@ export class HostRuntimeStore {
     }
 
     if (override) {
+      if (
+        isConfiguredLocalDaemonPasswordRequired() &&
+        !hasConfiguredLocalDaemonPassword(this.hosts, override)
+      ) {
+        return;
+      }
       this.bootstrapConfiguredOverride(override);
     } else {
       await this.bootstrapDefaultLocalhost();
