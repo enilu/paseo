@@ -4062,6 +4062,7 @@ export class Session {
         root: workspaceCwd ? expandTilde(workspaceCwd) : (process.env.HOME ?? homedir()),
         query,
         pathFormat: searchesWorkspace ? "relative" : "absolute",
+        allowExactAbsolutePathOutsideRoot: !searchesWorkspace,
         pathQueryPolicy: searchesWorkspace ? "slashes" : "rooted",
         blankQueryBehavior: searchesWorkspace ? "children" : "none",
         rootAliases: searchesWorkspace ? [] : ["~"],

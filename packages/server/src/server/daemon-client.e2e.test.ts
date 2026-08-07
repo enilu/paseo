@@ -1089,7 +1089,7 @@ test("update_agent persists unloaded title and labels across auto-unarchive", as
   }
 }, 180000);
 
-test("returns home-scoped directory suggestions", async () => {
+test("returns home-scoped directory suggestions and exact absolute paths", async () => {
   const insideHomeDir = mkdtempSync(path.join(homedir(), "paseo-dir-suggestion-"));
   const rootBrowseDir = mkdtempSync(path.join(homedir(), "000-paseo-root-browse-"));
   const outsideHomeDir = mkdtempSync(path.join(tmpdir(), "paseo-dir-suggestion-outside-"));
@@ -1121,6 +1121,13 @@ test("returns home-scoped directory suggestions", async () => {
     });
     expect(outsideResult.error).toBeNull();
     expect(outsideResult.directories).not.toContain(outsideHomeDir);
+
+    const exactOutsideResult = await ctx.client.getDirectorySuggestions({
+      query: outsideHomeDir,
+      limit: 25,
+    });
+    expect(exactOutsideResult.error).toBeNull();
+    expect(exactOutsideResult.entries).toEqual([{ path: outsideHomeDir, kind: "directory" }]);
   } finally {
     rmSync(insideHomeDir, { recursive: true, force: true });
     rmSync(rootBrowseDir, { recursive: true, force: true });
