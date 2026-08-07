@@ -1457,7 +1457,6 @@ function PermissionRequestCard({
 const stylesheet = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.surface0,
   },
   contentWrapper: {
     width: "100%",

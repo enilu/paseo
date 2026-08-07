@@ -1845,6 +1845,26 @@ export const ar: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "خلفية مخصصة",
+        configured: "تم تفعيل صورة الخلفية",
+        notConfigured: "لم يتم تعيين صورة خلفية",
+        description: "PNG أو JPEG أو WebP بحجم يصل إلى 20 ميغابايت. تبقى الصورة على هذا الجهاز.",
+        choose: "اختيار صورة",
+        replace: "استبدال الصورة",
+        remove: "إزالة",
+        opacity: "عتامة الخلفية",
+        opacityHint: "مدى وضوح الصورة خلف الواجهة (20–100٪)",
+        blur: "تمويه الخلفية",
+        blurHint: "تنعيم الصورة خلف الواجهة (0–20 بكسل)",
+        errorTitle: "خلفية مخصصة",
+        errors: {
+          "unsupported-type": "اختر صورة PNG أو JPEG أو WebP.",
+          "too-large": "اختر صورة أصغر من 20 ميغابايت.",
+          saveFailed: "تعذر حفظ صورة الخلفية.",
+          removeFailed: "تعذرت إزالة صورة الخلفية.",
+        },
+      },
       theme: {
         title: "سمة",
         accessibilityLabel: "الموضوع:{{value}}",

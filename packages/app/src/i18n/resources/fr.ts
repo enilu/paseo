@@ -1895,6 +1895,26 @@ export const fr: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "Arrière-plan personnalisé",
+        configured: "Image d’arrière-plan activée",
+        notConfigured: "Aucune image d’arrière-plan",
+        description: "PNG, JPEG ou WebP jusqu’à 20 Mo. L’image reste sur cet appareil.",
+        choose: "Choisir une image",
+        replace: "Remplacer l’image",
+        remove: "Supprimer",
+        opacity: "Opacité de l’arrière-plan",
+        opacityHint: "Intensité d’affichage de l’image derrière l’interface (20–100 %)",
+        blur: "Flou de l’arrière-plan",
+        blurHint: "Adoucit l’image derrière l’interface (0–20 px)",
+        errorTitle: "Arrière-plan personnalisé",
+        errors: {
+          "unsupported-type": "Choisissez une image PNG, JPEG ou WebP.",
+          "too-large": "Choisissez une image de moins de 20 Mo.",
+          saveFailed: "Impossible d’enregistrer l’image d’arrière-plan.",
+          removeFailed: "Impossible de supprimer l’image d’arrière-plan.",
+        },
+      },
       theme: {
         title: "Thème",
         accessibilityLabel: "Thème:{{value}}",

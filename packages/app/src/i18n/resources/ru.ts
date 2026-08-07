@@ -1881,6 +1881,27 @@ export const ru: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "Пользовательский фон",
+        configured: "Фоновое изображение включено",
+        notConfigured: "Фоновое изображение не выбрано",
+        description:
+          "PNG, JPEG или WebP размером до 20 МБ. Изображение хранится только на этом устройстве.",
+        choose: "Выбрать изображение",
+        replace: "Заменить изображение",
+        remove: "Удалить",
+        opacity: "Прозрачность фона",
+        opacityHint: "Интенсивность изображения за интерфейсом (20–100%)",
+        blur: "Размытие фона",
+        blurHint: "Смягчает изображение за интерфейсом (0–20 пкс)",
+        errorTitle: "Пользовательский фон",
+        errors: {
+          "unsupported-type": "Выберите изображение PNG, JPEG или WebP.",
+          "too-large": "Выберите изображение размером менее 20 МБ.",
+          saveFailed: "Не удалось сохранить фоновое изображение.",
+          removeFailed: "Не удалось удалить фоновое изображение.",
+        },
+      },
       theme: {
         title: "Тема",
         accessibilityLabel: "Тема:{{value}}",

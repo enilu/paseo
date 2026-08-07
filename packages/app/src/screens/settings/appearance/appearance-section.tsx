@@ -38,6 +38,7 @@ import {
 import { isNative } from "@/constants/platform";
 import { settingsStyles } from "@/styles/settings";
 import { AppearancePreview } from "./appearance-preview";
+import { CustomBackgroundSection } from "./custom-background-section";
 
 // ---------------------------------------------------------------------------
 // Theme-reactive leaf icons (withUnistyles + uniProps color mapping — no
@@ -614,6 +615,7 @@ export function AppearanceSection() {
           <ThemeRow value={settings.theme} onChange={handleThemeChange} />
         </View>
       </SettingsSection>
+      <CustomBackgroundSection />
       <SettingsSection title={t("settings.appearance.detailLevel.title")}>
         <View style={settingsStyles.card}>
           <AutoExpandReasoningRow

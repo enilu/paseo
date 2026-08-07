@@ -14,6 +14,14 @@ import {
   type SidebarRowItems,
 } from "@/components/sidebar/display-preferences/row-items";
 import { THEME_TO_UNISTYLES, type ThemeName } from "@/styles/theme";
+import type { AttachmentMetadata } from "@/attachments/types";
+import {
+  DEFAULT_BACKGROUND_BLUR,
+  DEFAULT_BACKGROUND_OPACITY,
+  parseBackgroundBlur,
+  parseBackgroundOpacity,
+  parseCustomBackgroundAttachment,
+} from "@/custom-background/model";
 
 export const APP_SETTINGS_KEY = "@paseo:app-settings";
 export const APP_SETTINGS_QUERY_KEY = ["app-settings"];
@@ -49,6 +57,9 @@ export const MAX_FONT_FAMILY_LENGTH = 200;
 
 export interface AppSettings {
   theme: ThemeName | "auto";
+  customBackground: AttachmentMetadata | null;
+  backgroundOpacity: number;
+  backgroundBlur: number;
   language: AppLanguage;
   sendBehavior: SendBehavior;
   serviceUrlBehavior: ServiceUrlBehavior;
@@ -85,6 +96,9 @@ type StoredAppSettings = Partial<Omit<AppSettings, "sidebarRowItems">> & {
 
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   theme: "auto",
+  customBackground: null,
+  backgroundOpacity: DEFAULT_BACKGROUND_OPACITY,
+  backgroundBlur: DEFAULT_BACKGROUND_BLUR,
   language: "system",
   sendBehavior: "interrupt",
   serviceUrlBehavior: "ask",
@@ -286,6 +300,18 @@ function pickEnumAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
 function pickAppSettings(stored: StoredAppSettings): Partial<AppSettings> {
   const result: Partial<AppSettings> = {};
   Object.assign(result, pickEnumAppSettings(stored));
+  const customBackground = parseCustomBackgroundAttachment(stored.customBackground);
+  if (customBackground !== null) {
+    result.customBackground = customBackground;
+  }
+  const backgroundOpacity = parseBackgroundOpacity(stored.backgroundOpacity);
+  if (backgroundOpacity !== null) {
+    result.backgroundOpacity = backgroundOpacity;
+  }
+  const backgroundBlur = parseBackgroundBlur(stored.backgroundBlur);
+  if (backgroundBlur !== null) {
+    result.backgroundBlur = backgroundBlur;
+  }
   if (stored.sidebarRowItems !== undefined) {
     result.sidebarRowItems = parseSidebarRowItems(stored.sidebarRowItems);
   }

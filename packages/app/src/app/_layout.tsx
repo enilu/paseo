@@ -86,6 +86,10 @@ import { KeyboardShiftProvider } from "@/hooks/use-keyboard-shift-style";
 import { useCompactWebViewportZoomLock } from "@/hooks/use-compact-web-viewport-zoom-lock";
 import { useOpenProject } from "@/hooks/use-open-project";
 import { useAppSettings } from "@/hooks/use-settings";
+import { CustomBackgroundLayer } from "@/custom-background/custom-background-layer";
+import { CustomBackgroundProvider, useCustomBackground } from "@/custom-background/context";
+import { syncCustomBackgroundGarbageCollectionRetention } from "@/custom-background/service";
+import { useCustomBackgroundUrl } from "@/custom-background/use-custom-background-url";
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { useOpenAgentListGesture } from "@/mobile-panels/gestures";
 import { MobilePanelsProvider } from "@/mobile-panels/provider";
@@ -442,6 +446,8 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const explorerWidth = usePanelStore((state) => state.explorerWidth);
   const { width: viewportWidth } = useWindowDimensions();
+  const { url: customBackgroundUrl } = useCustomBackground();
+  const appSurfaceStyle = customBackgroundUrl ? layoutStyles.rootFill : layoutStyles.surfaceFill;
 
   const cycleTheme = useCallback(() => {
     const currentIndex = THEME_CYCLE_ORDER.indexOf(settings.theme as ThemeName);
@@ -544,7 +550,8 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   );
 
   const surface = (
-    <View style={layoutStyles.surfaceFill}>
+    <View style={appSurfaceStyle}>
+      <CustomBackgroundLayer opacity={1} blur={settings.backgroundBlur} />
       {workspaceChrome}
       {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
         <WindowChromeRegion corners="top-left">
@@ -620,7 +627,7 @@ function MobileGestureWrapper({
 
   return (
     <GestureDetector gesture={openGesture} touchAction={MOBILE_WEB_GESTURE_TOUCH_ACTION}>
-      <View collapsable={false} style={layoutStyles.surfaceFill}>
+      <View collapsable={false} style={layoutStyles.rootFill}>
         {children}
       </View>
     </GestureDetector>
@@ -630,6 +637,12 @@ function MobileGestureWrapper({
 function ProvidersWrapper({ children }: { children: ReactNode }) {
   const { settings, isLoading: settingsLoading } = useAppSettings();
   const { upsertConnectionFromOfferUrl } = useHostMutations();
+  const customBackgroundUrl = useCustomBackgroundUrl(settings.customBackground);
+
+  useEffect(() => {
+    if (settingsLoading) return;
+    syncCustomBackgroundGarbageCollectionRetention(settings.customBackground !== null);
+  }, [settings.customBackground, settingsLoading]);
 
   // Apply theme setting on mount and when it changes
   useEffect(() => {
@@ -653,6 +666,8 @@ function ProvidersWrapper({ children }: { children: ReactNode }) {
       uiFontSize: settings.uiFontSize,
       codeFontSize: settings.codeFontSize,
       syntaxTheme: settings.syntaxTheme,
+      customBackgroundEnabled: customBackgroundUrl !== null,
+      backgroundOpacity: settings.backgroundOpacity,
     });
   }, [
     settingsLoading,
@@ -661,16 +676,20 @@ function ProvidersWrapper({ children }: { children: ReactNode }) {
     settings.uiFontSize,
     settings.codeFontSize,
     settings.syntaxTheme,
+    customBackgroundUrl,
+    settings.backgroundOpacity,
   ]);
 
   return (
-    <VoiceProvider>
-      <DesktopWindowControlsSync enabled={!settingsLoading} />
-      <OfferLinkListener upsertDaemonFromOfferUrl={upsertConnectionFromOfferUrl} />
-      <HostSessionManager />
-      <FaviconStatusSync />
-      {children}
-    </VoiceProvider>
+    <CustomBackgroundProvider attachment={settings.customBackground} url={customBackgroundUrl}>
+      <VoiceProvider>
+        <DesktopWindowControlsSync enabled={!settingsLoading} />
+        <OfferLinkListener upsertDaemonFromOfferUrl={upsertConnectionFromOfferUrl} />
+        <HostSessionManager />
+        <FaviconStatusSync />
+        {children}
+      </VoiceProvider>
+    </CustomBackgroundProvider>
   );
 }
 
@@ -890,7 +909,7 @@ const ROOT_STACK_SCREEN_OPTIONS = {
 function RootStack() {
   const storeReady = useStoreReady();
   return (
-    <ThemedStack screenOptions={ROOT_STACK_SCREEN_OPTIONS}>
+    <ThemedStack navigationBackgroundColor="transparent" screenOptions={ROOT_STACK_SCREEN_OPTIONS}>
       <Stack.Screen name="index" />
       <Stack.Protected guard={storeReady}>
         <Stack.Screen name="welcome" />
@@ -975,7 +994,7 @@ function RootProviders({ children }: { children: ReactNode }) {
 function RootAppTree() {
   return (
     <GestureHandlerRootView style={flexStyle}>
-      <View style={layoutStyles.surfaceFill}>
+      <View style={layoutStyles.rootFill}>
         <RootProviders>
           <RuntimeProviders>
             <AppShell />
@@ -1009,6 +1028,10 @@ export default function RootLayout() {
 }
 
 const layoutStyles = StyleSheet.create((theme) => ({
+  rootFill: {
+    flex: 1,
+    position: "relative",
+  },
   surfaceFill: {
     flex: 1,
     backgroundColor: theme.colors.surface0,

@@ -1876,6 +1876,26 @@ export const ptBR: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "Plano de fundo personalizado",
+        configured: "Imagem de fundo ativada",
+        notConfigured: "Nenhuma imagem de fundo",
+        description: "PNG, JPEG ou WebP de até 20 MB. A imagem permanece neste dispositivo.",
+        choose: "Escolher imagem",
+        replace: "Substituir imagem",
+        remove: "Remover",
+        opacity: "Opacidade do plano de fundo",
+        opacityHint: "Intensidade da imagem exibida atrás da interface (20–100%)",
+        blur: "Desfoque do plano de fundo",
+        blurHint: "Suaviza a imagem atrás da interface (0–20 px)",
+        errorTitle: "Plano de fundo personalizado",
+        errors: {
+          "unsupported-type": "Escolha uma imagem PNG, JPEG ou WebP.",
+          "too-large": "Escolha uma imagem menor que 20 MB.",
+          saveFailed: "Não foi possível salvar a imagem de fundo.",
+          removeFailed: "Não foi possível remover a imagem de fundo.",
+        },
+      },
       theme: {
         title: "Tema",
         accessibilityLabel: "Tema: {{value}}",
