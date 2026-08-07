@@ -19,6 +19,7 @@ export interface SearchDirectoryEntriesOptions {
   root: string;
   query: string;
   pathFormat: DirectorySuggestionPathFormat;
+  allowExactAbsolutePathOutsideRoot?: boolean;
   includeFiles?: boolean;
   includeDirectories?: boolean;
   matchMode?: DirectorySuggestionMatchMode;
@@ -125,6 +126,11 @@ export async function searchDirectoryEntries(
   const root = await resolveDirectory(options.root);
   if (!root) return [];
 
+  const exactOutsideRoot = options.allowExactAbsolutePathOutsideRoot
+    ? await findExactAbsoluteEntryOutsideRoot(options, root)
+    : null;
+  if (exactOutsideRoot) return [exactOutsideRoot];
+
   const gitIgnoredPaths = options.respectGitIgnore
     ? await loadGitIgnoredPaths(root)
     : new Set<string>();
@@ -146,6 +152,39 @@ export async function searchDirectoryEntries(
   return exact
     ? [exact, ...results.filter((entry) => !sameEntry(entry, exact))].slice(0, input.limit)
     : results;
+}
+
+async function findExactAbsoluteEntryOutsideRoot(
+  options: SearchDirectoryEntriesOptions,
+  root: string,
+): Promise<DirectorySuggestionEntry | null> {
+  if (options.pathFormat !== "absolute") return null;
+
+  const query = options.query.trim();
+  if (!path.isAbsolute(query)) return null;
+
+  const visiblePath = path.resolve(query);
+  const configuredRoot = path.resolve(options.root);
+  if (isPathInsideRoot(root, visiblePath) || isPathInsideRoot(configuredRoot, visiblePath)) {
+    return null;
+  }
+
+  const resolvedPath = await realpath(visiblePath).catch(() => null);
+  if (!resolvedPath) return null;
+
+  const info = await stat(resolvedPath).catch(() => null);
+  const kind = getEntryKind(info);
+  const includeDirectories = options.includeDirectories ?? true;
+  const includeFiles = options.includeFiles ?? false;
+  if (
+    !kind ||
+    (kind === "directory" && !includeDirectories) ||
+    (kind === "file" && !includeFiles)
+  ) {
+    return null;
+  }
+
+  return { path: visiblePath, kind };
 }
 
 function buildSearchInput(

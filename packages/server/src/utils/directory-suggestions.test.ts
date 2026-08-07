@@ -73,10 +73,12 @@ async function searchRelativeDirectoryEntries(options: {
 describe("searchDirectoryEntries", () => {
   let configuredSearchRoot: string;
   let searchRoot: string;
+  let outsideSearchRoot: string;
 
   beforeEach(() => {
     configuredSearchRoot = mkdtempSync(path.join(tmpdir(), "directory-search-"));
     searchRoot = realpathSync.native(configuredSearchRoot);
+    outsideSearchRoot = mkdtempSync(path.join(tmpdir(), "directory-search-outside-"));
     mkdirSync(path.join(searchRoot, "projects", "paseo-desktop"), { recursive: true });
     mkdirSync(path.join(searchRoot, "src", "components"), { recursive: true });
     mkdirSync(path.join(searchRoot, ".hidden", "secret"), { recursive: true });
@@ -85,6 +87,7 @@ describe("searchDirectoryEntries", () => {
 
   afterEach(() => {
     rmSync(searchRoot, { recursive: true, force: true });
+    rmSync(outsideSearchRoot, { recursive: true, force: true });
   });
 
   it("applies result paths and entry kinds as parameters of one search", async () => {
@@ -259,6 +262,25 @@ describe("searchDirectoryEntries", () => {
       ],
       projectEntries: [{ path: "projects/paseo-desktop", kind: "directory" }],
     });
+  });
+
+  it("returns an explicitly allowed exact absolute directory outside the search root", async () => {
+    const common = {
+      root: configuredSearchRoot,
+      query: outsideSearchRoot,
+      pathFormat: "absolute" as const,
+      includeFiles: false,
+      includeDirectories: true,
+      pathQueryPolicy: "rooted" as const,
+    };
+
+    await expect(searchDirectoryEntries(common)).resolves.toEqual([]);
+    await expect(
+      searchDirectoryEntries({
+        ...common,
+        allowExactAbsolutePathOutsideRoot: true,
+      }),
+    ).resolves.toEqual([{ path: outsideSearchRoot, kind: "directory" }]);
   });
 
   it("anchors single-segment absolute queries when the search root is a filesystem root", async () => {
