@@ -46,6 +46,7 @@ import { isNative } from "@/constants/platform";
 import type { PluginThemeOption } from "@/plugins/themes";
 import { settingsStyles } from "@/styles/settings";
 import { AppearancePreview } from "./appearance-preview";
+import { CustomBackgroundSection } from "./custom-background-section";
 
 // ---------------------------------------------------------------------------
 // Theme-reactive leaf icons (withUnistyles + uniProps color mapping — no
@@ -691,6 +692,7 @@ export function AppearanceSection() {
           />
         </View>
       </SettingsSection>
+      <CustomBackgroundSection />
       <SettingsSection title={t("settings.appearance.detailLevel.title")}>
         <View style={settingsStyles.card}>
           <AutoExpandReasoningRow
