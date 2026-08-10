@@ -67,6 +67,7 @@ async function buildPrompt(
         label: "Title style",
         default: [
           "An actionable task label: requested operation + concrete target + strongest distinguishing anchor (sentence case, max 80 characters).",
+          "Write the title in the predominant natural language of the user prompt; preserve that language instead of translating it.",
           "Preserve explicit identifiers such as PR or issue numbers, file paths, packages, components, commands, and quoted names when they distinguish the task.",
           "Aim for about 4 words, but never drop a part needed to understand or distinguish the task.",
           'Example: "Refactor PR #2638 Playwright specs".',
