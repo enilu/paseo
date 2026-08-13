@@ -304,18 +304,21 @@ export function parseAssistantFileLink(
     return null;
   }
 
-  if (isExternalHref(trimmed)) {
+  const decodedHref = safeDecodeURIComponent(trimmed);
+  const localHref = /^[A-Za-z]:[\\/]/.test(decodedHref) ? decodedHref : trimmed;
+
+  if (isExternalHref(localHref)) {
     return null;
   }
 
-  const inlinePathTarget = parseAssistantInlinePathLink(trimmed);
+  const inlinePathTarget = parseAssistantInlinePathLink(localHref);
   if (inlinePathTarget) {
     return inlinePathTarget;
   }
 
-  const windowsPathMatch = trimmed.match(/^([A-Za-z]:[\\/][^?#]*)(#[^?]+)?$/);
+  const windowsPathMatch = localHref.match(/^([A-Za-z]:[\\/][^?#]*)(#[^?]+)?$/);
   if (windowsPathMatch) {
-    const normalizedPath = normalizePathToken(windowsPathMatch[1] ?? "");
+    const normalizedPath = normalizePathToken(windowsPathMatch[1] ?? "")?.replace(/\/{2,}/g, "/");
     if (!normalizedPath) {
       return null;
     }
