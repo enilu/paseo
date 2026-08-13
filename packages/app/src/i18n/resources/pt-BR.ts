@@ -193,6 +193,7 @@ export const ptBR: TranslationResources = {
     empty: "Comece a conversar com este agente...",
     scrollToBottom: "Rolar para o fim",
     historyLoadFailed: "Não foi possível carregar o histórico do agente",
+    processSummary: "Processo · {{count}} itens",
     permission: {
       plan: "Plano",
       required: "Permissão necessária",

@@ -25,7 +25,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { MAX_CONTENT_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
 import { useMutation } from "@tanstack/react-query";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { Check, ChevronDown, X } from "lucide-react-native";
+import { Check, ChevronDown, ChevronRight, X } from "lucide-react-native";
 import { usePanelStore } from "@/stores/panel-store";
 import {
   AssistantMessage,
@@ -102,6 +102,11 @@ import { isWeb } from "@/constants/platform";
 import type { Theme } from "@/styles/theme";
 import { recordRenderProfileReasons } from "@/utils/render-profiler";
 import { useRetainedPanelActive } from "@/components/retained-panel";
+import { projectCompletedTurnProcesses } from "./turn-process-collapse";
+
+const ThemedProcessChevronDown = withUnistyles(ChevronDown);
+const ThemedProcessChevronRight = withUnistyles(ChevronRight);
+const processChevronMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
 function renderLiveAuxiliaryNode(input: {
   pendingPermissions: ReactNode;
@@ -181,6 +186,52 @@ function renderStreamItemWithTurnFooter(input: {
       {footer}
     </>
   );
+}
+
+function CompletedTurnProcessToggle({
+  expanded,
+  itemCount,
+  turnId,
+  onToggle,
+}: {
+  expanded: boolean;
+  itemCount: number;
+  turnId: string;
+  onToggle: (turnId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const accessibilityState = useMemo(() => ({ expanded }), [expanded]);
+  const handlePress = useCallback(() => onToggle(turnId), [onToggle, turnId]);
+  return (
+    <View style={stylesheet.processToggleWrapper}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={accessibilityState}
+        onPress={handlePress}
+        style={processToggleStyle}
+        testID="completed-turn-process-toggle"
+      >
+        {expanded ? (
+          <ThemedProcessChevronDown size={16} uniProps={processChevronMapping} />
+        ) : (
+          <ThemedProcessChevronRight size={16} uniProps={processChevronMapping} />
+        )}
+        <Text style={stylesheet.processToggleText}>
+          {t("agentStream.processSummary", { count: itemCount })}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function processToggleStyle({
+  hovered,
+  pressed,
+}: PressableStateCallbackType & { hovered?: boolean }) {
+  return [
+    stylesheet.processToggle,
+    (Boolean(hovered) || pressed) && stylesheet.processToggleActive,
+  ];
 }
 
 function renderListEmptyComponent(input: {
@@ -325,6 +376,9 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
     const [expandedToolCallGroupIds, setExpandedToolCallGroupIds] = useState<Set<string>>(
       new Set(),
     );
+    const [expandedCompletedTurnIds, setExpandedCompletedTurnIds] = useState<Set<string>>(
+      new Set(),
+    );
     const openFileExplorerForCheckout = usePanelStore((state) => state.openFileExplorerForCheckout);
     const setExplorerTabForCheckout = usePanelStore((state) => state.setExplorerTabForCheckout);
 
@@ -385,6 +439,7 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
       setIsNearBottom(true);
       setExpandedInlineToolCallIds(new Set());
       setExpandedToolCallGroupIds(new Set());
+      setExpandedCompletedTurnIds(new Set());
     }, [agentId]);
 
     const handleInlinePathPress = useStableEvent(
@@ -538,6 +593,22 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
         streamRenderStrategy,
       ],
     );
+    const completedTurnProcesses = useMemo(
+      () =>
+        projectCompletedTurnProcesses({
+          items: [...projectedToolCalls.tail, ...projectedToolCalls.head],
+          isTurnActive,
+        }),
+      [isTurnActive, projectedToolCalls.head, projectedToolCalls.tail],
+    );
+    const toggleCompletedTurnProcess = useCallback((turnId: string) => {
+      setExpandedCompletedTurnIds((previous) => {
+        const next = new Set(previous);
+        if (next.has(turnId)) next.delete(turnId);
+        else next.add(turnId);
+        return next;
+      });
+    }, []);
     const handleTimelineHistoryLoadError = useCallback(() => {
       toast?.error(t("agentStream.historyLoadFailed"));
     }, [t, toast]);
@@ -820,6 +891,35 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
 
     const renderStreamItem = useCallback(
       (layoutItem: StreamLayoutItem) => {
+        const process = completedTurnProcesses.byItemId.get(layoutItem.item.id);
+        if (process) {
+          const expanded = expandedCompletedTurnIds.has(process.turnId);
+          if (process.role === "content" && !expanded) {
+            return null;
+          }
+          const content = renderStreamItemContent(layoutItem);
+          const rendered = renderStreamItemWithTurnFooter({
+            content,
+            layoutItem,
+            strategy: streamRenderStrategy,
+            supportsTimelineCursor: supportsAgentForkContextCursor,
+            onForkAssistantTurn: readOnly ? undefined : handleForkAssistantTurn,
+          });
+          if (process.role !== "anchor") {
+            return rendered;
+          }
+          return (
+            <>
+              <CompletedTurnProcessToggle
+                expanded={expanded}
+                itemCount={process.itemCount}
+                turnId={process.turnId}
+                onToggle={toggleCompletedTurnProcess}
+              />
+              {expanded ? rendered : null}
+            </>
+          );
+        }
         const content = renderStreamItemContent(layoutItem);
         return renderStreamItemWithTurnFooter({
           content,
@@ -831,10 +931,13 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
       },
       [
         handleForkAssistantTurn,
+        completedTurnProcesses.byItemId,
+        expandedCompletedTurnIds,
         readOnly,
         renderStreamItemContent,
         streamRenderStrategy,
         supportsAgentForkContextCursor,
+        toggleCompletedTurnProcess,
       ],
     );
 
@@ -969,13 +1072,32 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
     const streamScrollEnabled =
       !streamRenderStrategy.shouldDisableParentScrollOnInlineDetailsExpansion() ||
       expandedInlineToolCallIds.size === 0;
+    const expandedCompletedProcessItemIds = useMemo(() => {
+      const itemIds = new Set<string>();
+      for (const [itemId, process] of completedTurnProcesses.byItemId) {
+        if (expandedCompletedTurnIds.has(process.turnId)) itemIds.add(itemId);
+      }
+      return itemIds;
+    }, [completedTurnProcesses.byItemId, expandedCompletedTurnIds]);
     const historyRowRevision = useMemo(
       () => ({
         contentById: projectedToolCalls.historyGroupUpdatesByHostId,
-        displayStateById: expandedToolCallGroupIds,
+        displayStateById: {
+          has: (id: string) =>
+            expandedToolCallGroupIds.has(id) || expandedCompletedProcessItemIds.has(id),
+        },
         globalDisplayState: isMobile,
       }),
-      [expandedToolCallGroupIds, isMobile, projectedToolCalls.historyGroupUpdatesByHostId],
+      [
+        expandedCompletedProcessItemIds,
+        expandedToolCallGroupIds,
+        isMobile,
+        projectedToolCalls.historyGroupUpdatesByHostId,
+      ],
+    );
+    const liveHeadRowRevision = useMemo(
+      () => ({ expandedCompletedTurnIds, expandedToolCallGroupIds }),
+      [expandedCompletedTurnIds, expandedToolCallGroupIds],
     );
 
     return (
@@ -986,7 +1108,7 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
               agentId,
               segments: renderModel.segments,
               historyRowRevision,
-              liveHeadRowRevision: expandedToolCallGroupIds,
+              liveHeadRowRevision,
               boundary,
               renderers,
               listEmptyComponent,
@@ -1484,6 +1606,29 @@ const stylesheet = StyleSheet.create((theme) => ({
     maxWidth: MAX_CONTENT_WIDTH,
     alignSelf: "center",
     paddingHorizontal: theme.spacing[2],
+  },
+  processToggleWrapper: {
+    width: "100%",
+    maxWidth: MAX_CONTENT_WIDTH,
+    alignSelf: "center",
+    paddingHorizontal: theme.spacing[2],
+  },
+  processToggle: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+    borderBottomWidth: theme.borderWidth[1],
+    borderBottomColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
+  },
+  processToggleActive: {
+    backgroundColor: theme.colors.surface1,
+  },
+  processToggleText: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
   },
   emptyState: {
     flex: 1,

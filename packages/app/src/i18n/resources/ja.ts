@@ -193,6 +193,7 @@ export const ja: TranslationResources = {
     empty: "このエージェントとチャットを始めましょう...",
     scrollToBottom: "下にスクロール",
     historyLoadFailed: "エージェントの履歴を読み込めませんでした",
+    processSummary: "プロセス · {{count}} 件",
     permission: {
       plan: "プラン",
       required: "権限が必要です",

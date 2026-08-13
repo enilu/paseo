@@ -191,6 +191,7 @@ export const en = {
     empty: "Start chatting with this agent...",
     scrollToBottom: "Scroll to bottom",
     historyLoadFailed: "Couldn't load agent history",
+    processSummary: "Process · {{count}} items",
     permission: {
       plan: "Plan",
       required: "Permission Required",

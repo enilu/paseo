@@ -193,6 +193,7 @@ export const es: TranslationResources = {
     empty: "Comience a chatear con este agente...",
     scrollToBottom: "Desplazarse hacia abajo",
     historyLoadFailed: "No se pudo cargar el historial del agente",
+    processSummary: "Proceso · {{count}} elementos",
     permission: {
       plan: "Plan",
       required: "Permiso requerido",

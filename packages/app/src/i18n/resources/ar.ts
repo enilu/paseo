@@ -193,6 +193,7 @@ export const ar: TranslationResources = {
     empty: "ابدأ الدردشة مع هذا الوكيل...",
     scrollToBottom: "قم بالتمرير إلى الأسفل",
     historyLoadFailed: "تعذر تحميل سجل الوكيل",
+    processSummary: "العملية · {{count}} عناصر",
     permission: {
       plan: "يخطط",
       required: "الإذن مطلوب",
