@@ -21,6 +21,7 @@ export interface Download {
   serverId: string;
   scopeId: string;
   fileName: string;
+  path: string;
   status: "downloading" | "complete" | "error";
   message?: string;
   progress?: DownloadProgress;
@@ -74,6 +75,7 @@ export const useDownloadStore = create<DownloadState>()((set, get) => ({
       serverId,
       scopeId,
       fileName,
+      path,
       status: "downloading",
       startedAt: Date.now(),
     };

@@ -1,14 +1,18 @@
-import { Text, View } from "react-native";
+import { useMemo } from "react";
+import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Download } from "lucide-react-native";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { Theme } from "@/styles/theme";
 import { FileConflictAlert, type FileConflictAlertState } from "./conflict-alert";
 import type { FileEditorStatus } from "./editor/model";
 
 const ThemedSpinner = withUnistyles(LoadingSpinner);
+const ThemedDownload = withUnistyles(Download);
 const spinnerMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const downloadIconMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
 export function FilePanelBar({
   size,
@@ -19,6 +23,8 @@ export function FilePanelBar({
   cursor,
   vimMode,
   conflict,
+  onDownload,
+  isDownloading = false,
 }: {
   size: number;
   lineCount?: number;
@@ -28,8 +34,11 @@ export function FilePanelBar({
   cursor?: { line: number; column: number };
   vimMode?: string | null;
   conflict?: FileConflictAlertState;
+  onDownload?: () => void;
+  isDownloading?: boolean;
 }) {
   const { t } = useTranslation();
+  const downloadAccessibilityState = useMemo(() => ({ disabled: isDownloading }), [isDownloading]);
   const previewModes = [
     {
       value: "preview" as const,
@@ -97,15 +106,35 @@ export function FilePanelBar({
             </Text>
           ) : null}
         </View>
-        {mode && onModeChange ? (
-          <SegmentedControl
-            size="xs"
-            value={mode}
-            onValueChange={onModeChange}
-            testID="file-preview-mode"
-            options={previewModes}
-          />
-        ) : null}
+        <View style={styles.actions}>
+          {onDownload ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("workspace.fileActions.download")}
+              accessibilityState={downloadAccessibilityState}
+              disabled={isDownloading}
+              hitSlop={8}
+              onPress={onDownload}
+              style={downloadButtonStyle}
+              testID="file-download"
+            >
+              {isDownloading ? (
+                <ThemedSpinner size={14} uniProps={spinnerMapping} />
+              ) : (
+                <ThemedDownload size={16} uniProps={downloadIconMapping} />
+              )}
+            </Pressable>
+          ) : null}
+          {mode && onModeChange ? (
+            <SegmentedControl
+              size="xs"
+              value={mode}
+              onValueChange={onModeChange}
+              testID="file-preview-mode"
+              options={previewModes}
+            />
+          ) : null}
+        </View>
       </View>
       {conflict ? <FileConflictAlert state={conflict} /> : null}
     </View>
@@ -116,6 +145,13 @@ function formatFileSize(size: number): string {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function downloadButtonStyle({
+  hovered,
+  pressed,
+}: PressableStateCallbackType & { hovered?: boolean }) {
+  return [styles.downloadButton, (Boolean(hovered) || pressed) && styles.downloadButtonHovered];
 }
 
 const styles = StyleSheet.create((theme) => ({
@@ -153,6 +189,22 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
+  },
+  actions: {
+    flexShrink: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+  },
+  downloadButton: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.borderRadius.md,
+  },
+  downloadButtonHovered: {
+    backgroundColor: theme.colors.surface2,
   },
   vim: {
     color: theme.colors.foregroundMuted,

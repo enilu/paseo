@@ -33,6 +33,8 @@ import { useAppActivelyVisible } from "@/hooks/use-app-visible";
 import { isFileQueryEnabled } from "@/components/file-pane-enabled";
 import { isWeb } from "@/constants/platform";
 import { useAppSettings } from "@/hooks/use-settings";
+import { useFileDownload } from "@/hooks/use-file-download";
+import { useDownloadStore } from "@/stores/download-store";
 import { useLiveFile } from "./live-file/hook";
 import { FilePanelBar } from "./bar";
 import { FileHtmlPreview } from "./html-preview";
@@ -400,11 +402,13 @@ function FilePreviewBody({
 
 export function FilePane({
   serverId,
+  workspaceId,
   workspaceRoot,
   location,
   navigationRevision,
 }: {
   serverId: string;
+  workspaceId?: string | null;
   workspaceRoot: string;
   location: WorkspaceFileLocation;
   navigationRevision: number;
@@ -435,6 +439,28 @@ export function FilePane({
         : null,
     [normalizedFilePath, normalizedWorkspaceRoot],
   );
+  const downloadFile = useFileDownload({
+    serverId,
+    workspaceId,
+    workspaceRoot: readTarget?.cwd ?? normalizedWorkspaceRoot,
+  });
+  const isDownloading = useDownloadStore((state) =>
+    Array.from(state.downloads.values()).some(
+      (download) =>
+        download.serverId === serverId &&
+        download.path === readTarget?.path &&
+        download.status === "downloading",
+    ),
+  );
+  const handleDownload = useCallback(() => {
+    if (!readTarget || isDownloading) {
+      return;
+    }
+    downloadFile({
+      fileName: getFileNameFromPath(readTarget.path) ?? readTarget.path,
+      path: readTarget.path,
+    });
+  }, [downloadFile, isDownloading, readTarget]);
 
   // Re-read the file when this pane becomes visible again (#445). `isActive`
   // covers tab switches; active app visibility covers backgrounding and returning
@@ -506,6 +532,8 @@ export function FilePane({
       location={location}
       navigationRevision={navigationRevision}
       imagePreviewUri={imagePreviewUri}
+      onDownload={readTarget ? handleDownload : undefined}
+      isDownloading={isDownloading}
     />
   );
 }
@@ -553,6 +581,8 @@ function FilePanePresentation({
   location,
   navigationRevision,
   imagePreviewUri,
+  onDownload,
+  isDownloading,
 }: {
   serverId: string;
   client: DaemonClient | null;
@@ -574,6 +604,8 @@ function FilePanePresentation({
   location: WorkspaceFileLocation;
   navigationRevision: number;
   imagePreviewUri: string | null;
+  onDownload?: () => void;
+  isDownloading: boolean;
 }) {
   if (!client && readTarget) {
     return (
@@ -603,6 +635,8 @@ function FilePanePresentation({
         isMobile={isMobile}
         location={location}
         navigationRevision={navigationRevision}
+        onDownload={onDownload}
+        isDownloading={isDownloading}
       />
     );
   }
@@ -628,6 +662,8 @@ function FilePanePresentation({
           lineCount={lineCount}
           mode={previewMode}
           onModeChange={onPreviewModeChange}
+          onDownload={onDownload}
+          isDownloading={isDownloading}
         />
       ) : null}
       <FilePreviewBody
@@ -658,6 +694,8 @@ function EditableFilePane({
   isMobile,
   location,
   navigationRevision,
+  onDownload,
+  isDownloading,
 }: {
   client: DaemonClient;
   cwd: string;
@@ -673,6 +711,8 @@ function EditableFilePane({
   isMobile: boolean;
   location: WorkspaceFileLocation;
   navigationRevision: number;
+  onDownload?: () => void;
+  isDownloading: boolean;
 }) {
   const { settings } = useAppSettings();
   const { t } = useTranslation();
@@ -790,6 +830,8 @@ function EditableFilePane({
         conflict={conflict}
         mode={mode}
         onModeChange={onModeChange}
+        onDownload={onDownload}
+        isDownloading={isDownloading}
       />
       {showSource ? (
         <FileEditorView
