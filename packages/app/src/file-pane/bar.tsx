@@ -2,14 +2,17 @@ import { Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { PaneContentToolbar } from "@/components/ui/pane-content-toolbar";
+import { Download } from "lucide-react-native";
+import { PaneContentToolbar, ToolbarButton } from "@/components/ui/pane-content-toolbar";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { Theme } from "@/styles/theme";
 import { FileConflictAlert, type FileConflictAlertState } from "./conflict-alert";
 import type { FileEditorStatus } from "./editor/model";
 
 const ThemedSpinner = withUnistyles(LoadingSpinner);
+const ThemedDownload = withUnistyles(Download);
 const spinnerMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const downloadIconMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
 export function FilePanelBar({
   size,
@@ -20,6 +23,8 @@ export function FilePanelBar({
   cursor,
   vimMode,
   conflict,
+  onDownload,
+  isDownloading = false,
 }: {
   size: number;
   lineCount?: number;
@@ -29,6 +34,8 @@ export function FilePanelBar({
   cursor?: { line: number; column: number };
   vimMode?: string | null;
   conflict?: FileConflictAlertState;
+  onDownload?: () => void;
+  isDownloading?: boolean;
 }) {
   const { t } = useTranslation();
   const previewModes = [
@@ -99,15 +106,31 @@ export function FilePanelBar({
               </Text>
             ) : null}
           </View>
-          {mode && onModeChange ? (
-            <SegmentedControl
-              size="xs"
-              value={mode}
-              onValueChange={onModeChange}
-              testID="file-preview-mode"
-              options={previewModes}
-            />
-          ) : null}
+          <View style={styles.actions}>
+            {onDownload ? (
+              <ToolbarButton
+                label={t("workspace.fileActions.download")}
+                disabled={isDownloading}
+                onPress={onDownload}
+                testID="file-download"
+              >
+                {isDownloading ? (
+                  <ThemedSpinner size={14} uniProps={spinnerMapping} />
+                ) : (
+                  <ThemedDownload size={16} uniProps={downloadIconMapping} />
+                )}
+              </ToolbarButton>
+            ) : null}
+            {mode && onModeChange ? (
+              <SegmentedControl
+                size="xs"
+                value={mode}
+                onValueChange={onModeChange}
+                testID="file-preview-mode"
+                options={previewModes}
+              />
+            ) : null}
+          </View>
         </View>
       </PaneContentToolbar>
       {conflict ? <FileConflictAlert state={conflict} /> : null}
@@ -149,6 +172,12 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.foregroundExtraMuted,
   },
   status: {
+    flexShrink: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+  },
+  actions: {
     flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
