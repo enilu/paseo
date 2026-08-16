@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useRef, useState, type ReactElement } from "react";
+import { useCallback, useMemo, useReducer, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
