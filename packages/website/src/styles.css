@@ -832,3 +832,109 @@
     transform: translate(0, 0) rotate(0deg);
   }
 }
+/* Shared agent sessions are a standalone read-only surface. */
+.share-page {
+  min-height: 100vh;
+  background: #101615;
+  color: #e8eeec;
+  padding: 0 24px 64px;
+}
+
+.share-header {
+  max-width: 820px;
+  height: 64px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #293330;
+}
+
+.share-brand {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: none;
+}
+.share-readonly,
+.share-timestamp {
+  color: #92a09c;
+  font-size: 13px;
+}
+.share-session,
+.share-state {
+  max-width: 760px;
+  margin: 48px auto 0;
+}
+.share-session h1 {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0;
+}
+.share-timestamp {
+  margin: 8px 0 40px;
+}
+.share-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.share-message {
+  line-height: 1.65;
+}
+.share-message-role {
+  color: #92a09c;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.share-message-user {
+  background: #18201e;
+  border: 1px solid #293330;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.share-markdown > :first-child {
+  margin-top: 0;
+}
+.share-markdown > :last-child {
+  margin-bottom: 0;
+}
+.share-markdown pre,
+.share-detail pre {
+  overflow-x: auto;
+  background: #0a0e0d;
+  border-radius: 8px;
+  padding: 14px;
+}
+.share-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.share-detail {
+  border: 1px solid #293330;
+  border-radius: 9px;
+  padding: 12px 14px;
+  color: #bdc8c5;
+}
+.share-detail summary {
+  cursor: pointer;
+  color: #e8eeec;
+}
+.share-error-entry,
+.share-state-error {
+  color: #ff9d94;
+}
+.share-todos {
+  margin: 0;
+  padding-left: 20px;
+}
+
+@media (max-width: 600px) {
+  .share-page {
+    padding-inline: 16px;
+  }
+  .share-session {
+    margin-top: 32px;
+  }
+}

@@ -211,6 +211,16 @@ export const es: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Compartir instantánea de solo lectura",
+      title: "¿Compartir esta sesión?",
+      warning:
+        "La instantánea incluye mensajes, razonamiento y resultados de herramientas. Cualquiera con el enlace podrá leerla durante 7 días.",
+      confirm: "Crear enlace",
+      creating: "Creando instantánea cifrada…",
+      copied: "Enlace copiado",
+      failed: "No se pudo crear el enlace. Inténtalo de nuevo.",
+    },
     states: {
       notFound: "Agentno encontrado",
       failedToLoad: "No se pudo cargar el agente",

@@ -59,6 +59,7 @@ import { Route as AgentsRouteImport } from "./routes/agents";
 import { Route as IndexRouteImport } from "./routes/index";
 import { Route as DocsIndexRouteImport } from "./routes/docs/index";
 import { Route as BlogIndexRouteImport } from "./routes/blog/index";
+import { Route as ShareShareIdRouteImport } from "./routes/share.$shareId";
 import { Route as DocsSplatRouteImport } from "./routes/docs/$";
 import { Route as BlogSplatRouteImport } from "./routes/blog/$";
 import { Route as AlternativesSupersetRouteImport } from "./routes/alternatives/superset";
@@ -319,6 +320,11 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: "/",
   getParentRoute: () => BlogRoute,
 } as any);
+const ShareShareIdRoute = ShareShareIdRouteImport.update({
+  id: "/share/$shareId",
+  path: "/share/$shareId",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: "/$",
   path: "/$",
@@ -425,6 +431,7 @@ export interface FileRoutesByFullPath {
   "/alternatives/superset": typeof AlternativesSupersetRoute;
   "/blog/$": typeof BlogSplatRoute;
   "/docs/$": typeof DocsSplatRoute;
+  "/share/$shareId": typeof ShareShareIdRoute;
   "/blog/": typeof BlogIndexRoute;
   "/docs/": typeof DocsIndexRoute;
 }
@@ -484,6 +491,7 @@ export interface FileRoutesByTo {
   "/alternatives/superset": typeof AlternativesSupersetRoute;
   "/blog/$": typeof BlogSplatRoute;
   "/docs/$": typeof DocsSplatRoute;
+  "/share/$shareId": typeof ShareShareIdRoute;
   "/blog": typeof BlogIndexRoute;
   "/docs": typeof DocsIndexRoute;
 }
@@ -546,6 +554,7 @@ export interface FileRoutesById {
   "/alternatives/superset": typeof AlternativesSupersetRoute;
   "/blog/$": typeof BlogSplatRoute;
   "/docs/$": typeof DocsSplatRoute;
+  "/share/$shareId": typeof ShareShareIdRoute;
   "/blog/": typeof BlogIndexRoute;
   "/docs/": typeof DocsIndexRoute;
 }
@@ -609,6 +618,7 @@ export interface FileRouteTypes {
     | "/alternatives/superset"
     | "/blog/$"
     | "/docs/$"
+    | "/share/$shareId"
     | "/blog/"
     | "/docs/";
   fileRoutesByTo: FileRoutesByTo;
@@ -668,6 +678,7 @@ export interface FileRouteTypes {
     | "/alternatives/superset"
     | "/blog/$"
     | "/docs/$"
+    | "/share/$shareId"
     | "/blog"
     | "/docs";
   id:
@@ -729,6 +740,7 @@ export interface FileRouteTypes {
     | "/alternatives/superset"
     | "/blog/$"
     | "/docs/$"
+    | "/share/$shareId"
     | "/blog/"
     | "/docs/";
   fileRoutesById: FileRoutesById;
@@ -789,6 +801,7 @@ export interface RootRouteChildren {
   AlternativesOpenchamberRoute: typeof AlternativesOpenchamberRoute;
   AlternativesOpencodeDesktopRoute: typeof AlternativesOpencodeDesktopRoute;
   AlternativesSupersetRoute: typeof AlternativesSupersetRoute;
+  ShareShareIdRoute: typeof ShareShareIdRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -1143,6 +1156,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof BlogIndexRouteImport;
       parentRoute: typeof BlogRoute;
     };
+    "/share/$shareId": {
+      id: "/share/$shareId";
+      path: "/share/$shareId";
+      fullPath: "/share/$shareId";
+      preLoaderRoute: typeof ShareShareIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/docs/$": {
       id: "/docs/$";
       path: "/$";
@@ -1289,6 +1309,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlternativesOpenchamberRoute: AlternativesOpenchamberRoute,
   AlternativesOpencodeDesktopRoute: AlternativesOpencodeDesktopRoute,
   AlternativesSupersetRoute: AlternativesSupersetRoute,
+  ShareShareIdRoute: ShareShareIdRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

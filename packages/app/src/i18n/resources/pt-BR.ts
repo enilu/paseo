@@ -211,6 +211,16 @@ export const ptBR: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Compartilhar snapshot somente leitura",
+      title: "Compartilhar esta sessão?",
+      warning:
+        "O snapshot inclui prompts, raciocínio e resultados de ferramentas. Qualquer pessoa com o link poderá lê-lo por 7 dias.",
+      confirm: "Criar link",
+      creating: "Criando snapshot criptografado…",
+      copied: "Link de compartilhamento copiado",
+      failed: "Não foi possível criar o link. Tente novamente.",
+    },
     states: {
       notFound: "Agente não encontrado",
       failedToLoad: "Falha ao carregar agente",

@@ -208,6 +208,16 @@ export const en = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Share read-only snapshot",
+      title: "Share this session?",
+      warning:
+        "The snapshot includes prompts, reasoning, and tool output. Anyone with the link can read it for 7 days.",
+      confirm: "Create share link",
+      creating: "Creating encrypted snapshot…",
+      copied: "Share link copied",
+      failed: "Couldn't create share link. Try again.",
+    },
     states: {
       notFound: "Agent not found",
       failedToLoad: "Failed to load agent",

@@ -1,4 +1,5 @@
 import startEntry from "@tanstack/react-start/server-entry";
+import { handleAgentShareApi } from "~/agent-share-api";
 import { getAndroidVersionCode } from "~/android-version";
 import { getCanonicalRedirect } from "~/canonical-url";
 import { getDoc } from "~/docs";
@@ -37,6 +38,10 @@ export default {
   async fetch(request: Request, env: WebsiteEnv, context: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.pathname === "/api/shares" || url.pathname.startsWith("/api/shares/")) {
+      return handleAgentShareApi(request, env.WEBSITE_CACHE ?? null);
+    }
+
     const environment = import.meta.env.DEV ? "development" : "production";
     const canonicalRedirect = getCanonicalRedirect(url, environment);
     if (canonicalRedirect) {
@@ -73,6 +78,17 @@ export default {
       return markdownResponse(doc.content);
     }
 
-    return startEntry.fetch(request);
+    const response = await startEntry.fetch(request);
+    if (url.pathname.startsWith("/share/")) {
+      const secured = new Response(response.body, response);
+      secured.headers.set(
+        "content-security-policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
+      );
+      secured.headers.set("referrer-policy", "no-referrer");
+      secured.headers.set("x-robots-tag", "noindex, nofollow");
+      return secured;
+    }
+    return response;
   },
 };

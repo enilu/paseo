@@ -213,6 +213,16 @@ export const fr: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Partager un instantané en lecture seule",
+      title: "Partager cette session ?",
+      warning:
+        "L’instantané inclut les messages, le raisonnement et les résultats des outils. Toute personne disposant du lien peut le lire pendant 7 jours.",
+      confirm: "Créer le lien",
+      creating: "Création de l’instantané chiffré…",
+      copied: "Lien de partage copié",
+      failed: "Impossible de créer le lien. Réessayez.",
+    },
     states: {
       notFound: "Agentintrouvable",
       failedToLoad: "Échec du chargement de l'agent",
