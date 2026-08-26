@@ -214,6 +214,16 @@ export const ko: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "읽기 전용 스냅샷 공유",
+      title: "이 세션을 공유할까요?",
+      warning:
+        "스냅샷에는 프롬프트, 추론 및 도구 출력이 포함됩니다. 링크가 있는 사람은 7일 동안 읽을 수 있습니다.",
+      confirm: "공유 링크 만들기",
+      creating: "암호화된 스냅샷 만드는 중…",
+      copied: "공유 링크가 복사되었습니다",
+      failed: "공유 링크를 만들 수 없습니다. 다시 시도하세요.",
+    },
     states: {
       notFound: "에이전트를 찾을 수 없습니다",
       failedToLoad: "에이전트를 불러오지 못했습니다",

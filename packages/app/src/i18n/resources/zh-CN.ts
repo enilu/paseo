@@ -214,6 +214,15 @@ export const zhCN: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "分享只读快照",
+      title: "分享此会话？",
+      warning: "快照包含提示词、推理和工具输出。任何获得链接的人都可以在 7 天内查看。",
+      confirm: "创建分享链接",
+      creating: "正在创建加密快照…",
+      copied: "分享链接已复制",
+      failed: "无法创建分享链接，请重试。",
+    },
     states: {
       notFound: "未找到 Agent",
       failedToLoad: "加载 Agent 失败",

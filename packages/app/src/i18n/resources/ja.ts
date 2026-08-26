@@ -214,6 +214,16 @@ export const ja: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "読み取り専用スナップショットを共有",
+      title: "このセッションを共有しますか？",
+      warning:
+        "スナップショットにはプロンプト、推論、ツール出力が含まれます。リンクを知っている人は7日間閲覧できます。",
+      confirm: "共有リンクを作成",
+      creating: "暗号化スナップショットを作成中…",
+      copied: "共有リンクをコピーしました",
+      failed: "共有リンクを作成できませんでした。もう一度お試しください。",
+    },
     states: {
       notFound: "エージェントが見つかりません",
       failedToLoad: "エージェントの読み込みに失敗しました",
