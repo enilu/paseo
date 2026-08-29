@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import type { ReactElement, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { Pressable, StyleSheet as RNStyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet as RNStyleSheet, Text, TextInput, View } from "react-native";
 import type { PressableStateCallbackType } from "react-native";
 import ReanimatedAnimated from "react-native-reanimated";
 import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
@@ -23,6 +23,7 @@ import { Combobox, ComboboxItem } from "@/components/ui/combobox";
 import type { ComboboxOption as ComboboxOptionType, ComboboxProps } from "@/components/ui/combobox";
 import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
 import { Shortcut } from "@/components/ui/shortcut";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { SidebarMenuToggle } from "@/components/headers/menu-header";
@@ -55,6 +56,7 @@ import {
 } from "@/stores/navigation-active-workspace-store";
 import { normalizeWorkspaceDescriptor, useSessionStore } from "@/stores/session-store";
 import { useWorkspace } from "@/stores/session-store-hooks";
+import { useWorkspaceAccessStore } from "@/stores/workspace-access-store";
 import { buildNewWorkspaceDraftKey, generateDraftId } from "@/stores/draft-keys";
 import { useOpenAddProject } from "@/hooks/use-open-add-project";
 import { isActiveCreateFlowForDraft, useCreateFlowStore } from "@/stores/create-flow-store";
@@ -678,6 +680,65 @@ function FormRow({ children }: { children: React.ReactNode }) {
   return <View style={styles.row}>{children}</View>;
 }
 
+function WorkspaceAccessCodeControl({
+  supported,
+  enabled,
+  accessCode,
+  onEnabledChange,
+  onAccessCodeChange,
+  disabled,
+  placeholderTextColor,
+}: {
+  supported: boolean;
+  enabled: boolean;
+  accessCode: string;
+  onEnabledChange: (value: boolean) => void;
+  onAccessCodeChange: (value: string) => void;
+  disabled: boolean;
+  placeholderTextColor: string;
+}) {
+  const { t } = useTranslation();
+  if (!supported) return null;
+
+  return (
+    <View style={styles.accessCodeSection}>
+      <View style={styles.accessCodeToggleRow}>
+        <View style={styles.accessCodeCopy}>
+          <Text style={styles.accessCodeLabel}>{t("newWorkspace.accessCode.label")}</Text>
+          <Text style={styles.accessCodeHint}>{t("newWorkspace.accessCode.hint")}</Text>
+        </View>
+        <Switch
+          value={enabled}
+          onValueChange={onEnabledChange}
+          disabled={disabled}
+          accessibilityLabel={t("newWorkspace.accessCode.label")}
+        />
+      </View>
+      {enabled ? (
+        <TextInput
+          value={accessCode}
+          onChangeText={onAccessCodeChange}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!disabled}
+          placeholder={t("newWorkspace.accessCode.placeholder")}
+          placeholderTextColor={placeholderTextColor}
+          style={styles.accessCodeInput}
+          testID="new-workspace-access-code-input"
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function canUseWorkspaceAccessCode(
+  featureSupported: boolean,
+  multiplicitySupported: boolean,
+): boolean {
+  return featureSupported && multiplicitySupported;
+}
+
 interface WorkspaceIsolationState {
   isolation: "local" | "worktree";
   setIsolation: (value: "local" | "worktree") => void;
@@ -808,6 +869,7 @@ async function createMultiplicityWorkspace(input: {
   ) => void;
   serverId: string;
   createFailedMessage: string;
+  accessCode?: string;
 }): Promise<ReturnType<typeof normalizeWorkspaceDescriptor>> {
   const projectId = getHostProjectId(input.project, input.serverId);
   if (!projectId) throw new Error("Project is not available on the selected host");
@@ -831,6 +893,7 @@ async function createMultiplicityWorkspace(input: {
           projectId,
         },
     ...(firstAgentContext ? { firstAgentContext } : {}),
+    ...(input.accessCode ? { accessCode: input.accessCode } : {}),
   });
   if (payload.error || !payload.workspace) {
     throw new Error(payload.error ?? input.createFailedMessage);
@@ -1571,6 +1634,13 @@ export function NewWorkspaceScreen({
   // COMPAT(workspaceMultiplicity): added in v0.1.97, drop the gate when floor >= v0.1.97
   const supportsWorkspaceMultiplicity = useHostFeature(selectedServerId, "workspaceMultiplicity");
   const supportsForgeSearch = useHostFeature(selectedServerId, "forgeSearch");
+  const supportsWorkspaceAccessCode = canUseWorkspaceAccessCode(
+    useHostFeature(selectedServerId, "workspaceAccessCode"),
+    supportsWorkspaceMultiplicity,
+  );
+  const markWorkspaceUnlocked = useWorkspaceAccessStore((state) => state.unlock);
+  const [protectWorkspace, setProtectWorkspace] = useState(false);
+  const [workspaceAccessCode, setWorkspaceAccessCode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdWorkspace, setCreatedWorkspace] = useState<ReturnType<
     typeof normalizeWorkspaceDescriptor
@@ -1957,6 +2027,9 @@ export function NewWorkspaceScreen({
       if (!selectedSourceDirectory) {
         throw new Error("Choose a host for this project");
       }
+      if (protectWorkspace && !workspaceAccessCode.trim()) {
+        throw new Error(t("newWorkspace.errors.accessCodeRequired"));
+      }
       const firstAgentContext = buildFirstAgentContext(input);
       const hostProjectId = getHostProjectId(selectedProject, selectedServerId);
       if (!hostProjectId) {
@@ -1971,7 +2044,14 @@ export function NewWorkspaceScreen({
         ...input.checkoutRequest,
       };
     },
-    [selectedProject, selectedServerId, selectedSourceDirectory],
+    [
+      protectWorkspace,
+      selectedProject,
+      selectedServerId,
+      selectedSourceDirectory,
+      t,
+      workspaceAccessCode,
+    ],
   );
 
   const ensureWorkspace = useCallback(
@@ -1989,6 +2069,9 @@ export function NewWorkspaceScreen({
       }
       if (!selectedSourceDirectory) {
         throw new Error("Choose a host for this project");
+      }
+      if (protectWorkspace && !workspaceAccessCode.trim()) {
+        throw new Error(t("newWorkspace.errors.accessCodeRequired"));
       }
       const connectedClient = withConnectedClient();
       const createsWorktree = !supportsWorkspaceMultiplicity || effectiveIsolation === "worktree";
@@ -2018,6 +2101,7 @@ export function NewWorkspaceScreen({
             mergeWorkspaces,
             serverId: selectedServerId,
             createFailedMessage: t("newWorkspace.errors.createWorktreeFailed"),
+            accessCode: protectWorkspace ? workspaceAccessCode.trim() : undefined,
           })
         : await createAndMergeWorkspace({
             client: connectedClient,
@@ -2026,6 +2110,9 @@ export function NewWorkspaceScreen({
             serverId: selectedServerId,
             createFailedMessage: t("newWorkspace.errors.createWorktreeFailed"),
           });
+      if (protectWorkspace && workspaceAccessCode.trim()) {
+        markWorkspaceUnlocked(selectedServerId, normalizedWorkspace.id);
+      }
       setCreatedWorkspace(normalizedWorkspace);
       return normalizedWorkspace;
     },
@@ -2034,6 +2121,8 @@ export function NewWorkspaceScreen({
       createdWorkspace,
       effectiveIsolation,
       mergeWorkspaces,
+      markWorkspaceUnlocked,
+      protectWorkspace,
       queryClient,
       selectedItem,
       selectedProject,
@@ -2042,6 +2131,7 @@ export function NewWorkspaceScreen({
       supportsWorkspaceMultiplicity,
       t,
       withConnectedClient,
+      workspaceAccessCode,
     ],
   );
 
@@ -2289,6 +2379,15 @@ export function NewWorkspaceScreen({
             <Text style={styles.composerTitle}>{t("newWorkspace.title")}</Text>
           </View>
           {formStack}
+          <WorkspaceAccessCodeControl
+            supported={supportsWorkspaceAccessCode}
+            enabled={protectWorkspace}
+            accessCode={workspaceAccessCode}
+            onEnabledChange={setProtectWorkspace}
+            onAccessCodeChange={setWorkspaceAccessCode}
+            disabled={isPending}
+            placeholderTextColor={theme.colors.foregroundMuted}
+          />
           {isTerminalLaunch ? (
             <Composer
               externalKeyboardShift
@@ -2409,6 +2508,30 @@ const styles = StyleSheet.create((theme) => ({
     paddingLeft: theme.spacing[4],
     paddingRight: theme.spacing[4],
     gap: theme.spacing[2],
+  },
+  accessCodeSection: {
+    width: "100%",
+    marginBottom: theme.spacing[4],
+    paddingHorizontal: theme.spacing[4],
+    gap: theme.spacing[2],
+  },
+  accessCodeToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing[4],
+  },
+  accessCodeCopy: { flex: 1, gap: theme.spacing[1] },
+  accessCodeLabel: { color: theme.colors.foreground, fontSize: theme.fontSize.sm },
+  accessCodeHint: { color: theme.colors.foregroundMuted, fontSize: theme.fontSize.xs },
+  accessCodeInput: {
+    color: theme.colors.foreground,
+    backgroundColor: theme.colors.surface1,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
   },
   desktopControl: {
     minWidth: 0,

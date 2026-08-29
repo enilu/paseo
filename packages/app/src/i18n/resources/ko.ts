@@ -395,6 +395,13 @@ export const ko: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "워크스페이스 불러오는 중",
       connecting: "연결 중",
@@ -1136,6 +1143,12 @@ export const ko: TranslationResources = {
       createWorktreeFailed: "워크트리를 생성하지 못했습니다",
       composerStateRequired: "작성기 상태가 필요합니다",
       selectModel: "모델을 선택하세요",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",

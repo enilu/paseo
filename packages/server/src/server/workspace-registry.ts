@@ -92,6 +92,12 @@ const PersistedWorkspaceRecordSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
+  // Optional bcrypt hash for the lightweight per-workspace access gate.
+  accessCodeHash: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
 });
 
 export type PersistedProjectRecord = z.infer<typeof PersistedProjectRecordSchema>;
@@ -556,6 +562,7 @@ export function createPersistedWorkspaceRecord(input: {
   archivedAt?: string | null;
   autoArchivedChangeRequestUrl?: string | null;
   pinnedAt?: string | null;
+  accessCodeHash?: string | null;
 }): PersistedWorkspaceRecord {
   return PersistedWorkspaceRecordSchema.parse({
     ...input,
@@ -568,6 +575,7 @@ export function createPersistedWorkspaceRecord(input: {
     archivedAt: input.archivedAt ?? null,
     autoArchivedChangeRequestUrl: input.autoArchivedChangeRequestUrl ?? null,
     pinnedAt: input.pinnedAt ?? null,
+    accessCodeHash: input.accessCodeHash ?? null,
   });
 }
 

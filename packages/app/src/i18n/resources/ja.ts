@@ -397,6 +397,13 @@ export const ja: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "ワークスペースを読み込み中",
       connecting: "接続中",
@@ -1140,6 +1147,12 @@ export const ja: TranslationResources = {
       createWorktreeFailed: "ワークツリーの作成に失敗しました",
       composerStateRequired: "コンポーザーの状態が必要です",
       selectModel: "モデルを選択してください",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",

@@ -2,7 +2,7 @@ import { memo, useId, useMemo, useCallback, useState, type ReactNode } from "rea
 import { Text, View, type ViewStyle } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from "react-native-svg";
-import { CircleAlert, Folder, FolderGit2, Monitor } from "lucide-react-native";
+import { CircleAlert, Folder, FolderGit2, LockKeyhole, Monitor } from "lucide-react-native";
 import { ProjectStatusIndicator } from "@/components/sidebar/project-leading-visual";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
 import {
@@ -44,6 +44,7 @@ const ThemedCircleAlert = withUnistyles(CircleAlert);
 const ThemedMonitor = withUnistyles(Monitor);
 const ThemedFolder = withUnistyles(Folder);
 const ThemedFolderGit2 = withUnistyles(FolderGit2);
+const ThemedLockKeyhole = withUnistyles(LockKeyhole);
 
 /**
  * react-native-svg's extractGradient reads stopColor off the child elements structurally,
@@ -111,7 +112,7 @@ export function SidebarWorkspaceRowFrame({
       workspace={workspace}
       prHint={workspace.prHint}
       isDragging={isDragging}
-      disabled={contextMenuOpen}
+      disabled={contextMenuOpen || workspace.locked === true}
     >
       {children({
         isHovered: isHovered && !contextMenuOpen && !isDragging,
@@ -194,15 +195,24 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
             <Text style={workspaceBranchTextStyle} numberOfLines={1}>
               {workspaceLabel}
             </Text>
+            {workspace.locked ? (
+              <ThemedLockKeyhole
+                size={12}
+                uniProps={foregroundMutedColorMapping}
+                testID={`sidebar-workspace-lock-${workspace.workspaceKey}`}
+              />
+            ) : null}
             <View style={sidebarWorkspaceRowStyles.rowRight}>{children}</View>
           </View>
-          <WorkspaceMetaRow
-            currentBranch={workspace.currentBranch}
-            projectName={leadingProjectName}
-            hostBadge={hostBadge ?? null}
-            prHint={workspace.prHint}
-            serviceSummary={serviceSummary}
-          />
+          {workspace.locked ? null : (
+            <WorkspaceMetaRow
+              currentBranch={workspace.currentBranch}
+              projectName={leadingProjectName}
+              hostBadge={hostBadge ?? null}
+              prHint={workspace.prHint}
+              serviceSummary={serviceSummary}
+            />
+          )}
         </View>
       </View>
       {showShortcutBadge && shortcutNumber !== null ? (

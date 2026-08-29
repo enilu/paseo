@@ -71,6 +71,7 @@ import {
   normalizeClientRestartRpcReason,
 } from "./lifecycle-reasons.js";
 import { DirectorySyncService } from "./directory-sync/index.js";
+import { hashWorkspaceAccessCode, verifyWorkspaceAccessCode } from "./workspace-access.js";
 
 import { AgentManager, AgentRunCancellationError } from "./agent/agent-manager.js";
 import { buildTimelinePromptIndex } from "./agent/timeline-prompt-index.js";
@@ -642,6 +643,7 @@ export class Session {
   private readonly agentStorage: AgentStorage;
   private readonly projectRegistry: ProjectRegistry;
   private readonly workspaceRegistry: WorkspaceRegistry;
+  private readonly unlockedWorkspaceIds = new Set<string>();
   private readonly directorySync: DirectorySyncService;
   private readonly filesystem: SessionFileSystem;
   private readonly github: ForgeService;
@@ -2088,21 +2090,7 @@ export class Session {
       case "agent.provider_subagents.timeline.get.request":
         return this.handleProviderSubagentTimelineRequest(msg);
       case "agent.timeline.set_subscription.request": {
-        const agentIds = [...new Set(msg.agentIds)].sort();
-        if (
-          source
-            ? this.supportsForSource(CLIENT_CAPS.selectiveAgentTimeline, source)
-            : this.supports(CLIENT_CAPS.selectiveAgentTimeline)
-        ) {
-          this.replaceAgentTimelineSubscription(source, agentIds);
-        }
-        const response: SessionOutboundMessage = {
-          type: "agent.timeline.set_subscription.response",
-          payload: { agentIds, requestId: msg.requestId },
-        };
-        if (source && this.onMessageToSource) this.onMessageToSource(source, response);
-        else this.emit(response);
-        return undefined;
+        return this.handleAgentTimelineSubscriptionRequest(msg, source);
       }
       case "agent.fork_context.request":
         return this.handleAgentForkContextRequest(msg);
@@ -2372,6 +2360,8 @@ export class Session {
 
   private dispatchWorkspaceRecoveryMessage(msg: SessionInboundMessage): Promise<void> | undefined {
     switch (msg.type) {
+      case "workspace.unlock.request":
+        return this.handleWorkspaceUnlockRequest(msg.workspaceId, msg.accessCode, msg.requestId);
       case "workspace.recovery.inspect.request":
         return this.handleWorkspaceRecoveryInspectRequest(msg);
       case "workspace.recovery.restore.request":
@@ -3187,6 +3177,80 @@ export class Session {
     });
   }
 
+  private async handleAgentTimelineSubscriptionRequest(
+    msg: Extract<SessionInboundMessage, { type: "agent.timeline.set_subscription.request" }>,
+    source?: object,
+  ): Promise<void> {
+    const agentIds: string[] = [];
+    for (const agentId of [...new Set(msg.agentIds)].sort()) {
+      try {
+        await this.assertAgentWorkspaceUnlocked(agentId);
+        agentIds.push(agentId);
+      } catch (error) {
+        if (!(error instanceof SessionRequestError) || error.code !== "workspace_locked") {
+          throw error;
+        }
+      }
+    }
+    if (
+      source
+        ? this.supportsForSource(CLIENT_CAPS.selectiveAgentTimeline, source)
+        : this.supports(CLIENT_CAPS.selectiveAgentTimeline)
+    ) {
+      this.replaceAgentTimelineSubscription(source, agentIds);
+    }
+    const response: SessionOutboundMessage = {
+      type: "agent.timeline.set_subscription.response",
+      payload: { agentIds, requestId: msg.requestId },
+    };
+    if (source && this.onMessageToSource) this.onMessageToSource(source, response);
+    else this.emit(response);
+  }
+
+  private async handleWorkspaceUnlockRequest(
+    workspaceId: string,
+    accessCode: string,
+    requestId: string,
+  ): Promise<void> {
+    const workspace = await this.workspaceRegistry.get(workspaceId);
+    if (!workspace || workspace.archivedAt) {
+      this.emit({
+        type: "workspace.unlock.response",
+        payload: { requestId, workspaceId, accepted: false, error: "Workspace not found" },
+      });
+      return;
+    }
+
+    const accepted =
+      !workspace.accessCodeHash ||
+      (await verifyWorkspaceAccessCode({ accessCode, hash: workspace.accessCodeHash }));
+    if (accepted) {
+      this.unlockedWorkspaceIds.add(workspaceId);
+    }
+    this.emit({
+      type: "workspace.unlock.response",
+      payload: {
+        requestId,
+        workspaceId,
+        accepted,
+        error: accepted ? null : "Incorrect access code",
+      },
+    });
+  }
+
+  private async assertWorkspaceUnlocked(workspaceId: string | null | undefined): Promise<void> {
+    if (!workspaceId) return;
+    const workspace = await this.workspaceRegistry.get(workspaceId);
+    if (!workspace?.accessCodeHash || this.unlockedWorkspaceIds.has(workspaceId)) return;
+    throw new SessionRequestError("workspace_locked", "Workspace access code required");
+  }
+
+  private async assertAgentWorkspaceUnlocked(agentId: string): Promise<void> {
+    const live = this.agentManager.getAgent(agentId);
+    const agent = live ?? (await this.agentStorage.get(agentId));
+    await this.assertWorkspaceUnlocked(agent?.workspaceId);
+  }
+
   private async handleWorkspaceRecoveryRestoreRequest(
     request: Extract<SessionInboundMessage, { type: "workspace.recovery.restore.request" }>,
   ): Promise<void> {
@@ -3251,6 +3315,7 @@ export class Session {
     const prompt = buildAgentPrompt(promptText, images, attachments);
 
     try {
+      await this.assertAgentWorkspaceUnlocked(agentId);
       await sendPromptToAgent({
         agentManager: this.agentManager,
         agentStorage: this.agentStorage,
@@ -3298,6 +3363,7 @@ export class Session {
     let createdWorktreeForCleanup: CreatePaseoWorktreeWorkflowResult | null = null;
     let createdAgentId: string | null = null;
     try {
+      await this.assertWorkspaceUnlocked(msg.workspaceId);
       const requestedCwd = resolve(config.cwd);
       const needsRequestedDirectory =
         Boolean(worktreeName || git || worktree) || (!msg.workspaceId && !msg.callerAgentId);
@@ -4613,6 +4679,7 @@ export class Session {
       name: resolveWorkspaceDisplayName(workspace),
       title: workspace.title,
       pinnedAt: workspace.pinnedAt,
+      locked: Boolean(workspace.accessCodeHash),
       archivingAt: null,
       status: "done",
       statusEnteredAt: null,
@@ -4704,6 +4771,7 @@ export class Session {
       }),
       title: result.workspace.title,
       pinnedAt: result.workspace.pinnedAt,
+      locked: Boolean(result.workspace.accessCodeHash),
       archivingAt: null,
       status: "done",
       statusEnteredAt: result.workspace.createdAt,
@@ -5578,12 +5646,22 @@ export class Session {
 
     const explicitTitle = request.title?.trim() || null;
     const promptTitle = resolveFirstAgentPromptTitle(request.firstAgentContext);
-    const workspace = await this.workspaceProvisioning.createWorkspaceForDirectory(
+    let workspace = await this.workspaceProvisioning.createWorkspaceForDirectory(
       cwd,
       explicitTitle ?? promptTitle,
       request.source.projectId,
       { expectsInitialAgent: Boolean(request.firstAgentContext) },
     );
+    if (request.accessCode) {
+      const accessCodeHash = await hashWorkspaceAccessCode(request.accessCode);
+      workspace =
+        (await this.workspaceRegistry.update(workspace.workspaceId, (record) => ({
+          ...record,
+          accessCodeHash,
+          updatedAt: new Date().toISOString(),
+        }))) ?? workspace;
+      this.unlockedWorkspaceIds.add(workspace.workspaceId);
+    }
     await this.syncWorkspaceGitObserverForWorkspace(workspace);
     const descriptor = await this.describeWorkspaceRecord(workspace);
     this.emit({
@@ -5645,7 +5723,7 @@ export class Session {
 
     const sourceCwd = await resolveWorktreeSourceCwd(source, this.projectRegistry);
 
-    const result = await this.createPaseoWorktreeWorkflow(
+    let result = await this.createPaseoWorktreeWorkflow(
       {
         cwd: sourceCwd,
         projectId: source.projectId,
@@ -5662,6 +5740,20 @@ export class Session {
         ? { resolveDefaultBranch: async () => source.baseBranch as string }
         : undefined,
     );
+
+    if (request.accessCode) {
+      const accessCodeHash = await hashWorkspaceAccessCode(request.accessCode);
+      const workspace = await this.workspaceRegistry.update(
+        result.workspace.workspaceId,
+        (record) => ({
+          ...record,
+          accessCodeHash,
+          updatedAt: new Date().toISOString(),
+        }),
+      );
+      if (workspace) result = { ...result, workspace };
+      this.unlockedWorkspaceIds.add(result.workspace.workspaceId);
+    }
 
     const descriptor = await this.describeCreatedWorktreeWorkspace(result);
     this.emit({
@@ -6455,6 +6547,20 @@ export class Session {
       });
       return;
     }
+    try {
+      await this.assertWorkspaceUnlocked(agent.workspaceId);
+    } catch (error) {
+      this.emit({
+        type: "fetch_agent_response",
+        payload: {
+          requestId,
+          agent: null,
+          project: null,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+      return;
+    }
 
     const project = agent.workspaceId
       ? await this.buildProjectPlacementForWorkspaceId(agent.workspaceId)
@@ -6579,6 +6685,7 @@ export class Session {
         agentStorage: this.agentStorage,
         logger: this.sessionLogger,
       });
+      await this.assertWorkspaceUnlocked(snapshot.workspaceId);
       const agentPayload = await this.buildAgentPayload(snapshot);
 
       const fetchedControlTimeline = this.agentManager.fetchTimeline(msg.agentId, {
@@ -6685,11 +6792,12 @@ export class Session {
     source?: object,
   ): Promise<void> {
     try {
-      await ensureAgentLoaded(msg.agentId, {
+      const agent = await ensureAgentLoaded(msg.agentId, {
         agentManager: this.agentManager,
         agentStorage: this.agentStorage,
         logger: this.sessionLogger,
       });
+      await this.assertWorkspaceUnlocked(agent.workspaceId);
       const rows = await this.agentManager.getTimelineRows(msg.agentId);
       const timeline = this.agentManager.fetchTimeline(msg.agentId, {
         direction: "tail",
@@ -6733,11 +6841,12 @@ export class Session {
     msg: Extract<SessionInboundMessage, { type: "agent.provider_subagents.list.request" }>,
   ): Promise<void> {
     try {
-      await ensureUnarchivedAgentLoaded(msg.parentAgentId, {
+      const parentAgent = await ensureUnarchivedAgentLoaded(msg.parentAgentId, {
         agentManager: this.agentManager,
         agentStorage: this.agentStorage,
         logger: this.sessionLogger,
       });
+      await this.assertWorkspaceUnlocked(parentAgent.workspaceId);
       this.emit({
         type: "agent.provider_subagents.list.response",
         payload: {
@@ -6765,11 +6874,12 @@ export class Session {
   ): Promise<void> {
     const direction: AgentTimelineFetchDirection = msg.direction ?? (msg.cursor ? "after" : "tail");
     try {
-      await ensureUnarchivedAgentLoaded(msg.parentAgentId, {
+      const parentAgent = await ensureUnarchivedAgentLoaded(msg.parentAgentId, {
         agentManager: this.agentManager,
         agentStorage: this.agentStorage,
         logger: this.sessionLogger,
       });
+      await this.assertWorkspaceUnlocked(parentAgent.workspaceId);
       const descriptor = this.agentManager.getProviderSubagent(msg.parentAgentId, msg.subagentId);
       if (!descriptor) {
         throw new Error("Provider subagent not found");
@@ -6904,6 +7014,7 @@ export class Session {
 
     try {
       const agentId = resolved.agentId;
+      await this.assertAgentWorkspaceUnlocked(agentId);
 
       const prompt = buildAgentPrompt(msg.text, msg.images, msg.attachments);
       this.sessionLogger.trace(

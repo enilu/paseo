@@ -73,11 +73,48 @@ import {
   type PersistedWorkspaceRecord,
   type WorkspaceMutation,
 } from "./workspace-registry.js";
+import { hashWorkspaceAccessCode } from "./workspace-access.js";
 
 const REPO_CWD = path.resolve("/tmp/repo");
 const UNREGISTERED_CWD = path.resolve("/tmp/unregistered");
 
 const terminalManagers: TerminalManager[] = [];
+
+test("workspace.unlock.request accepts only the matching access code", async () => {
+  const emitted: SessionOutboundMessage[] = [];
+  const session = createSessionForWorkspaceTests();
+  const workspace = createPersistedWorkspaceRecord({
+    workspaceId: "wks_locked",
+    projectId: "prj_locked",
+    cwd: REPO_CWD,
+    kind: "local_checkout",
+    displayName: "Locked workspace",
+    accessCodeHash: await hashWorkspaceAccessCode("4821"),
+    createdAt: "2026-08-29T00:00:00.000Z",
+    updatedAt: "2026-08-29T00:00:00.000Z",
+  });
+  session.workspaceRegistry.get = async (workspaceId: string) =>
+    workspaceId === workspace.workspaceId ? workspace : null;
+  session.emit = (message) => {
+    if (isSessionOutboundMessage(message)) emitted.push(message);
+  };
+
+  await session.handleMessage({
+    type: "workspace.unlock.request",
+    workspaceId: workspace.workspaceId,
+    accessCode: "wrong",
+    requestId: "unlock-wrong",
+  });
+  await session.handleMessage({
+    type: "workspace.unlock.request",
+    workspaceId: workspace.workspaceId,
+    accessCode: "4821",
+    requestId: "unlock-correct",
+  });
+
+  const responses = filterByType(emitted, "workspace.unlock.response");
+  expect(responses.map((response) => response.payload.accepted)).toEqual([false, true]);
+});
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   let resolve!: (value: T) => void;
