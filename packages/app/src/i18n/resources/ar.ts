@@ -397,6 +397,13 @@ export const ar: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "جارٍ تحميل مساحة العمل",
       connecting: "الاتصال",
@@ -1217,6 +1224,12 @@ export const ar: TranslationResources = {
       createWorktreeFailed: "فشل في إنشاء شجرة العمل",
       composerStateRequired: "حالة الملحن مطلوبة",
       selectModel: "اختر نموذجا",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",

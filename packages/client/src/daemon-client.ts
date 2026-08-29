@@ -2716,6 +2716,20 @@ export class DaemonClient {
     return { pinnedAt: payload.pinnedAt };
   }
 
+  async unlockWorkspace(
+    workspaceId: string,
+    accessCode: string,
+    requestId?: string,
+  ): Promise<void> {
+    const payload = await this.sendNamespacedCorrelatedSessionRequest<"workspace.unlock.response">({
+      requestId,
+      message: { type: "workspace.unlock.request", workspaceId, accessCode },
+    });
+    if (!payload.accepted) {
+      throw new Error(payload.error ?? "Workspace unlock rejected");
+    }
+  }
+
   async inspectWorkspaceRecovery(
     workspaceId: string,
     requestId?: string,
@@ -4189,6 +4203,7 @@ export class DaemonClient {
     input: {
       source: WorkspaceCreateRequest["source"];
       title?: string;
+      accessCode?: string;
       firstAgentContext?: WorkspaceCreateRequest["firstAgentContext"];
     },
     requestId?: string,
@@ -4199,6 +4214,7 @@ export class DaemonClient {
         type: "workspace.create.request",
         source: input.source,
         ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.accessCode !== undefined ? { accessCode: input.accessCode } : {}),
         ...(input.firstAgentContext !== undefined
           ? { firstAgentContext: input.firstAgentContext }
           : {}),

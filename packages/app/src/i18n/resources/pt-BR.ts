@@ -400,6 +400,13 @@ export const ptBR: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "Carregando workspace",
       connecting: "Conectando",
@@ -1242,6 +1249,12 @@ export const ptBR: TranslationResources = {
       createWorktreeFailed: "Falha ao criar worktree",
       composerStateRequired: "O estado do composer é obrigatório",
       selectModel: "Selecione um modelo",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",

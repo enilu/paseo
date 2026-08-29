@@ -399,6 +399,13 @@ export const ru: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "Загрузка рабочего пространства",
       connecting: "Подключение",
@@ -1233,6 +1240,12 @@ export const ru: TranslationResources = {
       createWorktreeFailed: "Не удалось создать worktree.",
       composerStateRequired: "Редактор сообщения ещё не готов.",
       selectModel: "Выберите модель",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Выберите проект",

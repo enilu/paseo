@@ -1031,6 +1031,13 @@ export const WorkspaceLabelDeleteInspectRequestSchema = z.object({
   name: z.string(),
 });
 
+export const WorkspaceUnlockRequestSchema = z.object({
+  type: z.literal("workspace.unlock.request"),
+  workspaceId: z.string(),
+  accessCode: z.string().min(1),
+  requestId: z.string(),
+});
+
 export const WorkspaceRecoveryInspectRequestSchema = z.object({
   type: z.literal("workspace.recovery.inspect.request"),
   workspaceId: z.string(),
@@ -1973,6 +1980,16 @@ export const WorkspacePinSetResponseSchema = z.object({
   payload: WorkspacePinSetResponsePayloadSchema,
 });
 
+export const WorkspaceUnlockResponseSchema = z.object({
+  type: z.literal("workspace.unlock.response"),
+  payload: z.object({
+    requestId: z.string(),
+    workspaceId: z.string(),
+    accepted: z.boolean(),
+    error: z.string().nullable(),
+  }),
+});
+
 export const WorkspaceRecoveryStateSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("recoverable"),
@@ -2489,6 +2506,8 @@ export const WorkspaceCreateRequestSchema = z.object({
   requestId: z.string(),
   // Optional user-set title applied to the created workspace.
   title: z.string().optional(),
+  // COMPAT(workspaceAccessCode): added in v0.4.x, old daemons ignore this field.
+  accessCode: z.string().min(1).optional(),
   // Optional prompt context for workspace-level name/branch generation.
   firstAgentContext: FirstAgentContextSchema.optional(),
   source: z.discriminatedUnion("kind", [
@@ -3000,6 +3019,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   WorkspaceLabelUpdateRequestSchema,
   WorkspaceLabelDeleteRequestSchema,
   WorkspaceLabelDeleteInspectRequestSchema,
+  WorkspaceUnlockRequestSchema,
   WorkspaceRecoveryInspectRequestSchema,
   WorkspaceRecoveryRestoreRequestSchema,
   SetVoiceModeMessageSchema,
@@ -3396,6 +3416,8 @@ export const ServerInfoStatusPayloadSchema = z
         checkoutRefresh: z.boolean().optional(),
         // COMPAT(workspaceMultiplicity): added in v0.1.97, drop the gate when floor >= v0.1.97
         workspaceMultiplicity: z.boolean().optional(),
+        // COMPAT(workspaceAccessCode): added in v0.4.x, remove gate after 2027-02-28.
+        workspaceAccessCode: z.boolean().optional(),
         // COMPAT(projectRemove): added in v0.1.97, drop the gate when floor >= v0.1.97.
         projectRemove: z.boolean().optional(),
         // COMPAT(projectAdd): added in v0.1.97, drop the gate when floor >= v0.1.97.
@@ -3768,6 +3790,8 @@ export const WorkspaceDescriptorPayloadSchema = z
     pinnedAt: z.string().nullable().optional(),
     // COMPAT(workspaceLabels): added in v0.5.0, remove optional after 2027-08-14.
     labels: z.array(z.string()).optional(),
+    // COMPAT(workspaceAccessCode): added in v0.7, remove after 2027-02-28.
+    locked: z.boolean().optional(),
     archivingAt: z.string().nullable().optional().default(null),
     status: WorkspaceStateBucketSchema,
     // Best-effort workspace status entry timestamp. Old daemons omit the
@@ -6380,6 +6404,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProjectRemoveResponseSchema,
   WorkspaceTitleSetResponseSchema,
   WorkspacePinSetResponseSchema,
+  WorkspaceUnlockResponseSchema,
   WorkspaceRecoveryInspectResponseSchema,
   WorkspaceRecoveryRestoreResponseSchema,
   WaitForFinishResponseMessageSchema,
@@ -6579,6 +6604,7 @@ export type WorkspaceTitleSetResponsePayload = z.infer<
 >;
 export type WorkspacePinSetResponse = z.infer<typeof WorkspacePinSetResponseSchema>;
 export type WorkspacePinSetResponsePayload = z.infer<typeof WorkspacePinSetResponsePayloadSchema>;
+export type WorkspaceUnlockResponse = z.infer<typeof WorkspaceUnlockResponseSchema>;
 export type WorkspaceRecoveryState = z.infer<typeof WorkspaceRecoveryStateSchema>;
 export type WorkspaceRecoveryInspectResponse = z.infer<
   typeof WorkspaceRecoveryInspectResponseSchema

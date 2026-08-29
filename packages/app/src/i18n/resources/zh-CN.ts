@@ -396,6 +396,13 @@ export const zhCN: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "输入访问码后才能查看或继续这个 workspace。",
+      placeholder: "访问码",
+      unlock: "解锁",
+      unlocking: "正在解锁...",
+      incorrectCode: "访问码不正确",
+    },
     route: {
       loading: "正在加载 workspace",
       connecting: "正在连接",
@@ -1205,6 +1212,12 @@ export const zhCN: TranslationResources = {
       createWorktreeFailed: "创建 worktree 失败",
       composerStateRequired: "Composer 状态必填",
       selectModel: "请选择模型",
+      accessCodeRequired: "请输入访问码",
+    },
+    accessCode: {
+      label: "保护这个 workspace",
+      hint: "其他人可以看到标题，但需要访问码才能打开。",
+      placeholder: "访问码",
     },
     tooltips: {
       project: "Choose the project",
