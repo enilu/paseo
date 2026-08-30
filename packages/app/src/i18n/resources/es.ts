@@ -1966,8 +1966,10 @@ export const es: TranslationResources = {
       notifications: "Notificaciones",
       permissions: "Permisos",
       diagnostics: "Diagnóstico",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "Acerca de",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "Editor",

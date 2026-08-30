@@ -1971,8 +1971,10 @@ export const fr: TranslationResources = {
       notifications: "Notifications",
       permissions: "Autorisations",
       diagnostics: "Diagnostic",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "À propos",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "Éditeur",

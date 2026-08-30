@@ -1920,8 +1920,10 @@ export const ar: TranslationResources = {
       notifications: "الإشعارات",
       permissions: "الأذونات",
       diagnostics: "التشخيص",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "عن",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "المحرر",

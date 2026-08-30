@@ -1951,8 +1951,10 @@ export const ru: TranslationResources = {
       notifications: "Уведомления",
       permissions: "Разрешения",
       diagnostics: "Диагностика",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "О приложении",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "Редактор",

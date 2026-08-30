@@ -1952,8 +1952,10 @@ export const ptBR: TranslationResources = {
       notifications: "Notificações",
       permissions: "Permissões",
       diagnostics: "Diagnósticos",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "Sobre",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "Editor",

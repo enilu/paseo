@@ -1898,7 +1898,11 @@ export const zhCN: TranslationResources = {
       notifications: "通知",
       permissions: "权限",
       diagnostics: "诊断",
+      releaseNotes: "版本记录",
       about: "关于",
+    },
+    releaseNotes: {
+      description: "这里手工记录正式发布版本的功能变化，不会根据每次 Git 提交自动生成。",
     },
     layout: en.settings.layout,
     editor: {

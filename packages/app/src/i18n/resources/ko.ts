@@ -1930,8 +1930,10 @@ export const ko: TranslationResources = {
       notifications: "알림",
       permissions: "권한",
       diagnostics: "진단",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "정보",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "편집기",

@@ -1930,7 +1930,12 @@ export const en = {
       notifications: "Notifications",
       permissions: "Permissions",
       diagnostics: "Diagnostics",
+      releaseNotes: "Release notes",
       about: "About",
+    },
+    releaseNotes: {
+      description:
+        "A manually maintained history of intentional Paseo releases. Entries are added for published versions, not for individual commits.",
     },
     layout: {
       openInSidePane: {

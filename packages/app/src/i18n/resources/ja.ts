@@ -1938,8 +1938,10 @@ export const ja: TranslationResources = {
       notifications: "通知",
       permissions: "権限",
       diagnostics: "診断",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "アプリ情報",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "エディター",
