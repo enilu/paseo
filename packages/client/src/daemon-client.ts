@@ -2256,8 +2256,32 @@ export class DaemonClient {
     });
   }
 
+  async addProtectedProject(
+    cwd: string,
+    accessCode: string | undefined,
+    requestId?: string,
+  ): Promise<ProjectAddPayload> {
+    return this.sendCorrelatedSessionRequest({
+      requestId,
+      message: {
+        type: "project.add.request",
+        cwd,
+        ...(accessCode ? { accessCode } : {}),
+      },
+      responseType: "project.add.response",
+    });
+  }
+
+  async unlockProject(projectId: string, accessCode: string, requestId?: string): Promise<void> {
+    const payload = await this.sendNamespacedCorrelatedSessionRequest<"project.unlock.response">({
+      requestId,
+      message: { type: "project.unlock.request", projectId, accessCode },
+    });
+    if (!payload.accepted) throw new Error(payload.error ?? "Project unlock rejected");
+  }
+
   async createProjectDirectory(
-    input: { parentPath: string; name: string },
+    input: { parentPath: string; name: string; accessCode?: string },
     requestId?: string,
   ): Promise<ProjectCreateDirectoryPayload> {
     return this.sendNamespacedCorrelatedSessionRequest<"project.create_directory.response">({
@@ -2266,6 +2290,7 @@ export class DaemonClient {
         type: "project.create_directory.request",
         parentPath: input.parentPath,
         name: input.name,
+        ...(input.accessCode ? { accessCode: input.accessCode } : {}),
       },
     });
   }
@@ -2287,7 +2312,12 @@ export class DaemonClient {
   }
 
   async cloneGithubProject(
-    input: { repo: string; targetDirectory: string; cloneProtocol?: ProjectGithubCloneProtocol },
+    input: {
+      repo: string;
+      targetDirectory: string;
+      cloneProtocol?: ProjectGithubCloneProtocol;
+      accessCode?: string;
+    },
     requestId?: string,
   ): Promise<ProjectGithubClonePayload> {
     const message = {
@@ -2295,6 +2325,7 @@ export class DaemonClient {
       repo: input.repo,
       targetDirectory: input.targetDirectory,
       ...(input.cloneProtocol ? { cloneProtocol: input.cloneProtocol } : {}),
+      ...(input.accessCode ? { accessCode: input.accessCode } : {}),
     } as const;
     return this.sendNamespacedCorrelatedSessionRequest<"project.github.clone.response">({
       requestId,

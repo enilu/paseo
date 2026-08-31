@@ -10,7 +10,7 @@ import {
 
 export function useOpenProject(
   serverId: string | null,
-): (path: string) => Promise<OpenProjectResult> {
+): (path: string, accessCode?: string) => Promise<OpenProjectResult> {
   const normalizedServerId = serverId?.trim() ?? "";
   const client = useHostRuntimeClient(normalizedServerId);
   const isConnected = useHostRuntimeIsConnected(normalizedServerId);
@@ -24,10 +24,11 @@ export function useOpenProject(
   const setHasHydratedWorkspaces = useSessionStore((state) => state.setHasHydratedWorkspaces);
 
   return useCallback(
-    async (path: string) => {
+    async (path: string, accessCode?: string) => {
       const result = await openProjectDirectly({
         serverId: normalizedServerId,
         projectPath: path,
+        accessCode,
         isConnected,
         canAddProject,
         client,
@@ -53,6 +54,7 @@ export function useCloneGithubProject(
   repo: string,
   targetDirectory: string,
   cloneProtocol?: ProjectGithubCloneProtocol,
+  accessCode?: string,
 ) => Promise<OpenProjectResult> {
   const normalizedServerId = serverId?.trim() ?? "";
   const client = useHostRuntimeClient(normalizedServerId);
@@ -61,12 +63,18 @@ export function useCloneGithubProject(
   const setHasHydratedWorkspaces = useSessionStore((state) => state.setHasHydratedWorkspaces);
 
   return useCallback(
-    async (repo: string, targetDirectory: string, cloneProtocol?: ProjectGithubCloneProtocol) => {
+    async (
+      repo: string,
+      targetDirectory: string,
+      cloneProtocol?: ProjectGithubCloneProtocol,
+      accessCode?: string,
+    ) => {
       return cloneGithubProjectDirectly({
         serverId: normalizedServerId,
         repo,
         targetDirectory,
         ...(cloneProtocol ? { cloneProtocol } : {}),
+        accessCode,
         isConnected,
         client,
         upsertProject,

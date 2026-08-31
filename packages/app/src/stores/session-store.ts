@@ -180,6 +180,7 @@ export interface ProjectDescriptor {
   projectIconRevision?: string;
   projectRootPath: string;
   projectKind: WorkspaceDescriptorPayload["projectKind"];
+  locked?: boolean;
 }
 
 export function normalizeProjectDescriptor(
@@ -194,6 +195,7 @@ export function normalizeProjectDescriptor(
     projectIconRevision: payload.projectIconRevision,
     projectRootPath: payload.projectRootPath,
     projectKind: payload.projectKind,
+    locked: payload.locked,
   };
 }
 

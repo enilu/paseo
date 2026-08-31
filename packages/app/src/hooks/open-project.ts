@@ -43,7 +43,10 @@ export interface OpenProjectDirectlyInput {
   projectPath: string;
   isConnected: boolean;
   canAddProject: boolean;
-  client: Pick<DaemonClient, "addProject"> | null;
+  accessCode?: string;
+  client:
+    | (Pick<DaemonClient, "addProject"> & Partial<Pick<DaemonClient, "addProtectedProject">>)
+    | null;
   upsertProject: (serverId: string, project: ProjectDescriptor) => void;
   setHasHydratedWorkspaces: (serverId: string, hydrated: boolean) => void;
 }
@@ -74,6 +77,7 @@ export interface CloneGithubProjectDirectlyInput extends ProjectRegistrationCall
   repo: string;
   targetDirectory: string;
   cloneProtocol?: ProjectGithubCloneProtocol;
+  accessCode?: string;
   client: Pick<DaemonClient, "cloneGithubProject"> | null;
 }
 
@@ -94,7 +98,16 @@ export async function openProjectDirectly(
     };
   }
 
-  const payload = await input.client.addProject(trimmedPath);
+  if (input.accessCode && !input.client.addProtectedProject) {
+    return {
+      ok: false,
+      errorCode: null,
+      error: "Update the host to protect projects with an access code.",
+    };
+  }
+  const payload = input.accessCode
+    ? await input.client.addProtectedProject!(trimmedPath, input.accessCode)
+    : await input.client.addProject(trimmedPath);
   if (payload.error || !payload.project) {
     return {
       ok: false,
@@ -134,6 +147,7 @@ export async function cloneGithubProjectDirectly(
     repo: trimmedRepo,
     targetDirectory: trimmedTargetDirectory,
     ...(input.cloneProtocol ? { cloneProtocol: input.cloneProtocol } : {}),
+    ...(input.accessCode ? { accessCode: input.accessCode } : {}),
   });
   if (payload.error || !payload.project) {
     return { ok: false, errorCode: null, error: payload.error };

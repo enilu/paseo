@@ -12,3 +12,6 @@ export async function verifyWorkspaceAccessCode(input: {
 }): Promise<boolean> {
   return compare(input.accessCode, input.hash);
 }
+
+export const hashProjectAccessCode = hashWorkspaceAccessCode;
+export const verifyProjectAccessCode = verifyWorkspaceAccessCode;

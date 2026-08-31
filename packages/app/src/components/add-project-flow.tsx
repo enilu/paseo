@@ -24,6 +24,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   View,
   type PressableStateCallbackType,
@@ -95,6 +96,7 @@ import type { AddProjectFlowRequest } from "@/stores/add-project-flow-store";
 import type { Theme } from "@/styles/theme";
 import { shortenPath } from "@/utils/shorten-path";
 import { buildNewWorkspaceRoute, buildSettingsAddHostRoute } from "@/utils/host-routes";
+import { useProjectAccessStore } from "@/stores/project-access-store";
 
 interface AddProjectFlowProps {
   request: AddProjectFlowRequest;
@@ -327,6 +329,8 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const githubSearchByHost = useHostFeatureMap(hostIds, "workspaceGithubRepositorySearch");
   // COMPAT(projectCreateDirectory): added in v0.1.108, remove gate after 2027-01-15.
   const createDirectoryByHost = useHostFeatureMap(hostIds, "projectCreateDirectory");
+  // COMPAT(projectAccessCode): added in v0.7.x, remove gate after 2027-08-31.
+  const projectAccessCodeByHost = useHostFeatureMap(hostIds, "projectAccessCode");
   const localServerId = useLocalDaemonServerId();
   const availableHosts = useMemo<AddProjectHost[]>(
     () =>
@@ -381,6 +385,11 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const pageInputValueRef = useRef(page.kind === "method" ? "" : pageInput(page));
   pageInputValueRef.current = page.kind === "method" ? "" : pageInput(page);
   const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [protectProject, setProtectProject] = useState(false);
+  const [projectAccessCode, setProjectAccessCode] = useState("");
+  const unlockProject = useProjectAccessStore((store) => store.unlock);
+  const protectedAccessCode = protectProject ? projectAccessCode.trim() : undefined;
+  const supportsProjectAccessCode = hostId ? projectAccessCodeByHost.get(hostId) === true : false;
 
   useEffect(() => {
     setState((current) =>
@@ -470,8 +479,18 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
         setPageStatus(current, sourceKind, { isSubmitting: true, error: null }),
       );
       try {
-        const result = await openProject(path);
+        if (protectProject && !protectedAccessCode) {
+          setState((current) =>
+            setPageStatus(current, sourceKind, {
+              isSubmitting: false,
+              error: "请输入项目访问码",
+            }),
+          );
+          return;
+        }
+        const result = await openProject(path, protectedAccessCode);
         if (result.ok) {
+          if (protectedAccessCode) unlockProject(hostId, result.project.projectId);
           openNewWorkspaceForProject(hostId, result.project);
           return;
         }
@@ -492,7 +511,14 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
         submissionInFlightRef.current = false;
       }
     },
-    [hostId, openNewWorkspaceForProject, openProject],
+    [
+      hostId,
+      openNewWorkspaceForProject,
+      openProject,
+      protectProject,
+      protectedAccessCode,
+      unlockProject,
+    ],
   );
 
   const browse = useCallback(async () => {
@@ -547,12 +573,23 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
         setPageStatus(current, "github-location", { isSubmitting: true, error: null }),
       );
       try {
+        if (protectProject && !protectedAccessCode) {
+          setState((current) =>
+            setPageStatus(current, "github-location", {
+              isSubmitting: false,
+              error: "请输入项目访问码",
+            }),
+          );
+          return;
+        }
         const result = await cloneGithubProject(
           locationPage.repository.cloneUrl,
           parentPath,
           locationPage.repository.cloneProtocol,
+          protectedAccessCode,
         );
         if (result.ok) {
+          if (protectedAccessCode) unlockProject(locationPage.hostId, result.project.projectId);
           lastCloneParentByHost.set(locationPage.hostId, parentPath);
           openNewWorkspaceForProject(locationPage.hostId, result.project);
           return;
@@ -574,7 +611,13 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
         submissionInFlightRef.current = false;
       }
     },
-    [cloneGithubProject, openNewWorkspaceForProject],
+    [
+      cloneGithubProject,
+      openNewWorkspaceForProject,
+      protectProject,
+      protectedAccessCode,
+      unlockProject,
+    ],
   );
   const rows = useMemo<FlowRowOption[]>(() => {
     if (page.kind === "host") {
@@ -715,6 +758,12 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
       );
       return;
     }
+    if (protectProject && !protectedAccessCode) {
+      setState((current) =>
+        setPageStatus(current, "new-directory-name", { error: "请输入项目访问码" }),
+      );
+      return;
+    }
     if (submissionInFlightRef.current) return;
     submissionInFlightRef.current = true;
     setState((current) =>
@@ -724,6 +773,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
       const payload = await client.createProjectDirectory({
         parentPath: page.parentPath,
         name,
+        ...(protectedAccessCode ? { accessCode: protectedAccessCode } : {}),
       });
       if (payload.error || !payload.project) {
         setState((current) =>
@@ -740,6 +790,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
         upsertProject,
         setHasHydratedWorkspaces,
       });
+      if (protectedAccessCode) unlockProject(page.hostId, payload.project.projectId);
       openNewWorkspaceForProject(page.hostId, payload.project);
     } catch {
       setState((current) =>
@@ -751,7 +802,16 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
     } finally {
       submissionInFlightRef.current = false;
     }
-  }, [client, openNewWorkspaceForProject, page, setHasHydratedWorkspaces, upsertProject]);
+  }, [
+    client,
+    openNewWorkspaceForProject,
+    page,
+    protectProject,
+    protectedAccessCode,
+    setHasHydratedWorkspaces,
+    unlockProject,
+    upsertProject,
+  ]);
 
   const submitActive = useCallback(() => {
     if (page.kind === "new-directory-name") {
@@ -895,6 +955,35 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
               />
             ) : null}
           </View>
+          {supportsProjectAccessCode ? (
+            <View style={styles.projectAccessSection}>
+              <View style={styles.projectAccessToggleRow}>
+                <View style={styles.projectAccessCopy}>
+                  <Text style={styles.projectAccessLabel}>保护此项目</Text>
+                  <Text style={styles.projectAccessHint}>其他人需要访问码才能查看或新建会话。</Text>
+                </View>
+                <Switch
+                  value={protectProject}
+                  onValueChange={setProtectProject}
+                  disabled={isSubmitting}
+                  accessibilityLabel="保护此项目"
+                />
+              </View>
+              {protectProject ? (
+                <ThemedTextInput
+                  initialValue=""
+                  onChangeText={setProjectAccessCode}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isSubmitting}
+                  placeholder="项目访问码"
+                  style={styles.input}
+                  testID="add-project-access-code-input"
+                />
+              ) : null}
+            </View>
+          ) : null}
           <ScrollView
             style={styles.results}
             contentContainerStyle={styles.resultsContent}
@@ -979,6 +1068,20 @@ const styles = StyleSheet.create((theme) => ({
     overflow: "hidden",
     ...theme.shadow.lg,
   },
+  projectAccessSection: {
+    gap: theme.spacing[2],
+    paddingHorizontal: theme.spacing[4],
+    paddingBottom: theme.spacing[3],
+  },
+  projectAccessToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing[3],
+  },
+  projectAccessCopy: { flex: 1, gap: theme.spacing[1] },
+  projectAccessLabel: { color: theme.colors.foreground, fontWeight: "600" },
+  projectAccessHint: { color: theme.colors.foregroundMuted, fontSize: theme.fontSize.sm },
   header: {
     flexShrink: 0,
     paddingHorizontal: theme.spacing[4],

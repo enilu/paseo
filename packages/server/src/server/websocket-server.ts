@@ -311,6 +311,7 @@ function createNoopProjectRegistry(): ProjectRegistry {
       projectKey: input.projectKey ?? null,
       customName: null,
       customIconRevision: null,
+      accessCodeHash: null,
       createdAt: input.timestamp,
       updatedAt: input.timestamp,
       archivedAt: null,
@@ -1714,6 +1715,8 @@ export class VoiceAssistantWebSocketServer {
         workspaceMultiplicity: true,
         // COMPAT(workspaceAccessCode): added in v0.4.x, remove gate after 2027-02-28.
         workspaceAccessCode: true,
+        // COMPAT(projectAccessCode): added in v0.7.x, remove gate after 2027-08-31.
+        projectAccessCode: true,
         // COMPAT(projectRemove): added in v0.1.97, drop the gate when floor >= v0.1.97.
         projectRemove: true,
         // COMPAT(projectAdd): added in v0.1.97, drop the gate when floor >= v0.1.97.

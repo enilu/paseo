@@ -36,7 +36,14 @@ import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop
 import { type GestureType } from "react-native-gesture-handler";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
 import { useWorkspaceClipboardActions } from "@/hooks/use-workspace-clipboard-actions";
-import { ExternalLink, Settings, MoreVertical, Plus, Trash2 } from "lucide-react-native";
+import {
+  ExternalLink,
+  LockKeyhole,
+  Settings,
+  MoreVertical,
+  Plus,
+  Trash2,
+} from "lucide-react-native";
 import { NestableScrollContainer } from "react-native-draggable-flatlist";
 import { DraggableList, type DraggableRenderItemInfo } from "./draggable-list";
 import type { DraggableListDragHandleProps } from "./draggable-list.types";
@@ -151,6 +158,8 @@ import type { HostBadgeModel } from "@/hosts/appearance";
 import { useHostBadges } from "@/hosts/use-host-badges";
 import { useSidebarRowItems } from "@/components/sidebar/display-preferences/model";
 import { PullRequestStateIcon } from "@/git/pull-request-state-icon";
+import { ProjectAccessDialog } from "@/components/project-access-dialog";
+import { projectAccessKey, useProjectAccessStore } from "@/stores/project-access-store";
 
 const workspaceKeyExtractor = (workspace: SidebarWorkspacePlacement) => workspace.workspaceKey;
 
@@ -163,6 +172,7 @@ const ThemedPlus = withUnistyles(Plus);
 const ThemedMoreVertical = withUnistyles(MoreVertical);
 const ThemedTrash2 = withUnistyles(Trash2);
 const ThemedSettings = withUnistyles(Settings);
+const ThemedLockKeyhole = withUnistyles(LockKeyhole);
 
 const foregroundColorMapping = (theme: Theme) => ({
   color: theme.colors.foreground,
@@ -258,6 +268,7 @@ interface ProjectHeaderRowProps {
   onRemoveProject?: () => void;
   removeProjectStatus?: "idle" | "pending";
   dragHandleProps?: DraggableListDragHandleProps;
+  isLocked?: boolean;
 }
 
 interface WorkspaceRowInnerProps {
@@ -863,6 +874,7 @@ function ProjectHeaderRow({
   onRemoveProject,
   removeProjectStatus = "idle",
   dragHandleProps,
+  isLocked = false,
 }: ProjectHeaderRowProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
@@ -953,6 +965,7 @@ function ProjectHeaderRow({
           <Text style={styles.projectTitle} numberOfLines={1}>
             {displayName}
           </Text>
+          {isLocked ? <ThemedLockKeyhole size={13} uniProps={foregroundMutedColorMapping} /> : null}
         </View>
       </View>
       <ProjectRowTrailingActions
@@ -1573,6 +1586,20 @@ function ProjectBlock({
   supportsPinningByServerId: ReadonlyMap<string, boolean>;
   onToggleWorkspacePin: ToggleSidebarWorkspacePin;
 }) {
+  const unlockedProjectKeys = useProjectAccessStore((state) => state.unlockedKeys);
+  const lockedHost = project.hosts.find(
+    (host) =>
+      host.locked && !unlockedProjectKeys.has(projectAccessKey(host.serverId, host.projectId)),
+  );
+  const [accessDialogVisible, setAccessDialogVisible] = useState(false);
+  const handleProjectPress = useCallback(() => {
+    if (lockedHost) {
+      setAccessDialogVisible(true);
+      return;
+    }
+    onToggleCollapsed(project.viewKey);
+  }, [lockedHost, onToggleCollapsed, project.viewKey]);
+  const closeAccessDialog = useCallback(() => setAccessDialogVisible(false), []);
   const {
     visibleItems: visibleWorkspaces,
     expanded: workspacesExpanded,
@@ -1725,12 +1752,8 @@ function ProjectBlock({
     })();
   }, [isRemovingProject, displayName, t, toast, project.hosts]);
 
-  const handleToggleCollapsed = useCallback(() => {
-    onToggleCollapsed(project.viewKey);
-  }, [onToggleCollapsed, project.viewKey]);
-
   let projectChildren = null;
-  if (!collapsed) {
+  if (!collapsed && !lockedHost) {
     if (project.workspaces.length > 0) {
       projectChildren = (
         <>
@@ -1782,9 +1805,11 @@ function ProjectBlock({
         statusBucket={aggregateStatusBucket}
         selected={false}
         chevron={rowModel.chevron}
-        onPress={handleToggleCollapsed}
+        onPress={handleProjectPress}
         worktreeTarget={
-          rowModel.trailingAction.kind === "new_workspace" ? rowModel.trailingAction.target : null
+          !lockedHost && rowModel.trailingAction.kind === "new_workspace"
+            ? rowModel.trailingAction.target
+            : null
         }
         isProjectActive={active}
         onWorkspacePress={onWorkspacePress}
@@ -1796,9 +1821,19 @@ function ProjectBlock({
         onRemoveProject={handleRemoveProject}
         removeProjectStatus={isRemovingProject ? "pending" : "idle"}
         dragHandleProps={dragHandleProps}
+        isLocked={Boolean(lockedHost)}
       />
 
       {projectChildren}
+      {lockedHost ? (
+        <ProjectAccessDialog
+          serverId={lockedHost.serverId}
+          projectId={lockedHost.projectId}
+          projectName={displayName}
+          visible={accessDialogVisible}
+          onClose={closeAccessDialog}
+        />
+      ) : null}
     </View>
   );
 }

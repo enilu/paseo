@@ -76,7 +76,12 @@ import {
   WorkspaceLabelStorageUncertainError,
   type WorkspaceLabelService,
 } from "./workspace-labels/index.js";
-import { hashWorkspaceAccessCode, verifyWorkspaceAccessCode } from "./workspace-access.js";
+import {
+  hashProjectAccessCode,
+  hashWorkspaceAccessCode,
+  verifyProjectAccessCode,
+  verifyWorkspaceAccessCode,
+} from "./workspace-access.js";
 
 import { AgentManager, AgentRunCancellationError } from "./agent/agent-manager.js";
 import { buildTimelinePromptIndex } from "./agent/timeline-prompt-index.js";
@@ -250,6 +255,10 @@ import {
   WorkspaceAccessAuthorization,
   WorkspaceAccessDeniedError,
 } from "./authorization/workspace-access.js";
+import {
+  ProjectAccessAuthorization,
+  ProjectAccessDeniedError,
+} from "./authorization/project-access.js";
 
 function resolveWorkspaceSetupRuntime(
   runtime: WorkspaceSetupRuntime | undefined,
@@ -674,6 +683,7 @@ export class Session {
   private readonly projectRegistry: ProjectRegistry;
   private readonly workspaceRegistry: WorkspaceRegistry;
   private readonly workspaceAccessAuthorization: WorkspaceAccessAuthorization;
+  private readonly projectAccessAuthorization: ProjectAccessAuthorization;
   private readonly directorySync: DirectorySyncService;
   private readonly filesystem: SessionFileSystem;
   private readonly github: ForgeService;
@@ -848,6 +858,16 @@ export class Session {
         return agent?.workspaceId ?? null;
       },
       verifyAccessCode: verifyWorkspaceAccessCode,
+    });
+    this.projectAccessAuthorization = new ProjectAccessAuthorization({
+      getProject: (projectId) => this.projectRegistry.get(projectId),
+      getWorkspace: (workspaceId) => this.workspaceRegistry.get(workspaceId),
+      getAgentWorkspaceId: async (agentId) => {
+        const live = this.agentManager.getAgent(agentId);
+        const agent = live ?? (await this.agentStorage.get(agentId));
+        return agent?.workspaceId ?? null;
+      },
+      verifyAccessCode: verifyProjectAccessCode,
     });
     this.directorySync = resolveDirectorySync(directorySync);
     this.workspaceLabelService = resolveWorkspaceLabelService(workspaceLabelService);
@@ -1884,10 +1904,17 @@ export class Session {
         return;
       }
       try {
+        const projectAuthorization = this.projectAccessAuthorization.authorizeInbound(msg);
+        if (projectAuthorization) await projectAuthorization;
         const workspaceAuthorization = this.workspaceAccessAuthorization.authorizeInbound(msg);
         if (workspaceAuthorization) await workspaceAuthorization;
       } catch (error) {
-        if (!(error instanceof WorkspaceAccessDeniedError)) throw error;
+        if (
+          !(error instanceof WorkspaceAccessDeniedError) &&
+          !(error instanceof ProjectAccessDeniedError)
+        ) {
+          throw error;
+        }
         const requestId = sessionRequestId(msg);
         if (requestId) {
           this.emit({
@@ -2450,6 +2477,7 @@ export class Session {
     }
   }
 
+  // oxlint-disable-next-line complexity
   private dispatchWorkspaceAndProjectMessage(
     msg: SessionInboundMessage,
   ): Promise<void> | undefined {
@@ -2475,6 +2503,8 @@ export class Session {
         return this.handleOpenProjectRequest(msg);
       case "project.add.request":
         return this.handleProjectAddRequest(msg);
+      case "project.unlock.request":
+        return this.handleProjectUnlockRequest(msg.projectId, msg.accessCode, msg.requestId);
       case "project.create_directory.request":
         return this.handleProjectCreateDirectoryRequest(msg);
       case "workspace.github.search_repositories.request":
@@ -3374,7 +3404,10 @@ export class Session {
     msg: Extract<SessionInboundMessage, { type: "agent.timeline.set_subscription.request" }>,
     source?: object,
   ): Promise<void> {
-    const agentIds = await this.workspaceAccessAuthorization.filterAuthorizedAgentIds(msg.agentIds);
+    const projectAuthorizedAgentIds =
+      await this.projectAccessAuthorization.filterAuthorizedAgentIds(msg.agentIds);
+    const agentIds =
+      await this.workspaceAccessAuthorization.filterAuthorizedAgentIds(projectAuthorizedAgentIds);
     if (
       source
         ? this.supportsForSource(CLIENT_CAPS.selectiveAgentTimeline, source)
@@ -3408,6 +3441,22 @@ export class Session {
         accepted,
         error,
       },
+    });
+  }
+
+  private async handleProjectUnlockRequest(
+    projectId: string,
+    accessCode: string,
+    requestId: string,
+  ): Promise<void> {
+    const result = await this.projectAccessAuthorization.unlock(projectId, accessCode);
+    const accepted = result === "accepted";
+    let error: string | null = null;
+    if (result === "project_not_found") error = "Project not found";
+    if (result === "incorrect_code") error = "Incorrect access code";
+    this.emit({
+      type: "project.unlock.response",
+      payload: { requestId, projectId, accepted, error },
     });
   }
 
@@ -5171,6 +5220,7 @@ export class Session {
       projectIconRevision: icon.revision,
       projectRootPath: project.rootPath,
       projectKind: project.kind,
+      locked: Boolean(project.accessCodeHash),
     };
   }
 
@@ -6273,6 +6323,10 @@ export class Session {
         projectsBefore.set(project.projectId, project);
       }
       const project = await this.workspaceProvisioning.findOrCreateProjectForDirectory(cwd);
+      if (request.accessCode && projectsBefore.has(project.projectId) && !project.accessCodeHash) {
+        throw new Error("Project is already registered; protect it when it is first added");
+      }
+      await this.applyProjectAccessCode(project, request.accessCode);
       this.sessionLogger.info(
         {
           requestedCwd,
@@ -6318,6 +6372,7 @@ export class Session {
             this.workspaceProvisioning.findOrCreateProjectForDirectory(directoryPath),
         },
       );
+      await this.applyProjectAccessCode(result.project, request.accessCode);
       this.emit({
         type: "project.create_directory.response",
         payload: {
@@ -6481,6 +6536,7 @@ export class Session {
 
       const project =
         await this.workspaceProvisioning.findOrCreateProjectForDirectory(checkoutPath);
+      await this.applyProjectAccessCode(project, request.accessCode);
 
       this.emit({
         type: "project.github.clone.response",
@@ -6509,6 +6565,28 @@ export class Session {
         },
       });
     }
+  }
+
+  private async applyProjectAccessCode(
+    project: PersistedProjectRecord,
+    accessCode: string | undefined,
+  ): Promise<void> {
+    if (!accessCode) return;
+    if (project.accessCodeHash) {
+      const result = await this.projectAccessAuthorization.unlock(project.projectId, accessCode);
+      if (result === "accepted") return;
+      if (result === "incorrect_code") throw new Error("Incorrect project access code");
+      throw new Error("Project not found");
+    }
+
+    const accessCodeHash = await hashProjectAccessCode(accessCode);
+    await this.projectRegistry.update(project.projectId, (record) => ({
+      ...record,
+      accessCodeHash,
+      updatedAt: new Date().toISOString(),
+    }));
+    project.accessCodeHash = accessCodeHash;
+    this.projectAccessAuthorization.grant(project.projectId);
   }
 
   // Named accessor: the workspace descriptor builder and the git-watch test both read a workspace's

@@ -970,6 +970,13 @@ export const ProjectRemoveRequestSchema = z.object({
   requestId: z.string(),
 });
 
+export const ProjectUnlockRequestSchema = z.object({
+  type: z.literal("project.unlock.request"),
+  projectId: z.string(),
+  accessCode: z.string().min(1),
+  requestId: z.string(),
+});
+
 export const WorkspaceTitleSetRequestSchema = z.object({
   type: z.literal("workspace.title.set.request"),
   workspaceId: z.string(),
@@ -1990,6 +1997,16 @@ export const WorkspaceUnlockResponseSchema = z.object({
   }),
 });
 
+export const ProjectUnlockResponseSchema = z.object({
+  type: z.literal("project.unlock.response"),
+  payload: z.object({
+    requestId: z.string(),
+    projectId: z.string(),
+    accepted: z.boolean(),
+    error: z.string().nullable(),
+  }),
+});
+
 export const WorkspaceRecoveryStateSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("recoverable"),
@@ -2455,6 +2472,8 @@ const MIN_REPOSITORY_PATH_LENGTH = 3;
 export const ProjectAddRequestSchema = z.object({
   type: z.literal("project.add.request"),
   cwd: z.string(),
+  // COMPAT(projectAccessCode): added in v0.7.x, old daemons ignore this field.
+  accessCode: z.string().min(1).optional(),
   requestId: z.string(),
 });
 
@@ -2462,6 +2481,8 @@ export const ProjectCreateDirectoryRequestSchema = z.object({
   type: z.literal("project.create_directory.request"),
   parentPath: z.string(),
   name: z.string(),
+  // COMPAT(projectAccessCode): added in v0.7.x, old daemons ignore this field.
+  accessCode: z.string().min(1).optional(),
   requestId: z.string(),
 });
 
@@ -2489,6 +2510,8 @@ export const ProjectGithubCloneRequestSchema = z.object({
   repo: z.string().trim().min(MIN_REPOSITORY_PATH_LENGTH),
   cloneProtocol: ProjectGithubCloneProtocolSchema.optional(),
   targetDirectory: z.string().trim().min(1),
+  // COMPAT(projectAccessCode): added in v0.7.x, old daemons ignore this field.
+  accessCode: z.string().min(1).optional(),
   requestId: z.string(),
 });
 
@@ -3012,6 +3035,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProjectRenameRequestSchema,
   ProjectIconSetRequestSchema,
   ProjectRemoveRequestSchema,
+  ProjectUnlockRequestSchema,
   WorkspaceTitleSetRequestSchema,
   WorkspacePinSetRequestSchema,
   WorkspaceLabelListRequestSchema,
@@ -3418,6 +3442,8 @@ export const ServerInfoStatusPayloadSchema = z
         workspaceMultiplicity: z.boolean().optional(),
         // COMPAT(workspaceAccessCode): added in v0.4.x, remove gate after 2027-02-28.
         workspaceAccessCode: z.boolean().optional(),
+        // COMPAT(projectAccessCode): added in v0.7.x, remove gate after 2027-08-31.
+        projectAccessCode: z.boolean().optional(),
         // COMPAT(projectRemove): added in v0.1.97, drop the gate when floor >= v0.1.97.
         projectRemove: z.boolean().optional(),
         // COMPAT(projectAdd): added in v0.1.97, drop the gate when floor >= v0.1.97.
@@ -3963,6 +3989,8 @@ export const WorkspaceProjectDescriptorPayloadSchema = z.object({
   projectIconRevision: z.string().optional(),
   projectRootPath: z.string(),
   projectKind: z.enum(["git", "non_git", "directory"]),
+  // COMPAT(projectAccessCode): added in v0.7.x, remove gate after 2027-08-31.
+  locked: z.boolean().optional(),
   // COMPAT(directorySync): sequence of this latest directory projection.
   syncSeq: z.number().int().positive().optional(),
 });
@@ -6402,6 +6430,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProjectRenameResponseSchema,
   ProjectIconSetResponseSchema,
   ProjectRemoveResponseSchema,
+  ProjectUnlockResponseSchema,
   WorkspaceTitleSetResponseSchema,
   WorkspacePinSetResponseSchema,
   WorkspaceUnlockResponseSchema,
@@ -6598,6 +6627,7 @@ export type UpdateAgentResponseMessage = z.infer<typeof UpdateAgentResponseMessa
 export type ProjectRenameResponse = z.infer<typeof ProjectRenameResponseSchema>;
 export type ProjectIconSetResponse = z.infer<typeof ProjectIconSetResponseSchema>;
 export type ProjectRemoveResponse = z.infer<typeof ProjectRemoveResponseSchema>;
+export type ProjectUnlockResponse = z.infer<typeof ProjectUnlockResponseSchema>;
 export type WorkspaceTitleSetResponse = z.infer<typeof WorkspaceTitleSetResponseSchema>;
 export type WorkspaceTitleSetResponsePayload = z.infer<
   typeof WorkspaceTitleSetResponsePayloadSchema
@@ -6749,6 +6779,7 @@ export type ProjectIconSource = z.infer<typeof ProjectIconSourceSchema>;
 export type ProjectRenameRequest = z.infer<typeof ProjectRenameRequestSchema>;
 export type ProjectIconSetRequest = z.infer<typeof ProjectIconSetRequestSchema>;
 export type ProjectRemoveRequest = z.infer<typeof ProjectRemoveRequestSchema>;
+export type ProjectUnlockRequest = z.infer<typeof ProjectUnlockRequestSchema>;
 export type WorkspaceTitleSetRequest = z.infer<typeof WorkspaceTitleSetRequestSchema>;
 export type WorkspacePinSetRequest = z.infer<typeof WorkspacePinSetRequestSchema>;
 export type WorkspaceRecoveryInspectRequest = z.infer<typeof WorkspaceRecoveryInspectRequestSchema>;

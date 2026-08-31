@@ -33,6 +33,13 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
     },
     features: [
       {
+        title: { en: "Project access codes", zhCN: "项目访问码" },
+        description: {
+          en: "Keep projects visible while requiring an access code to reveal their workspaces or create new ones.",
+          zhCN: "项目名称仍在侧栏可见，输入访问码后才能查看其 Workspace 或新建 Workspace。",
+        },
+      },
+      {
         title: { en: "Workspace access codes", zhCN: "Workspace 访问码" },
         description: {
           en: "Keep workspace titles visible while requiring an access code for timelines, messages, and new agents.",
