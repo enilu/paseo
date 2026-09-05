@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { app } from "electron";
@@ -34,6 +35,22 @@ export {
 let cachedStagingUserIdPromise: Promise<string> | null = null;
 
 const UPDATE_CHANNEL_NOT_PUBLISHED_CODE = "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND";
+const DISABLE_APP_UPDATES_MARKER_FILENAME = "paseo-disable-app-updates";
+
+export function areAppUpdatesDisabledForThisBuild(): boolean {
+  if (process.env.PASEO_DISABLE_APP_UPDATES === "1") {
+    return true;
+  }
+  if (!app.isPackaged) {
+    return false;
+  }
+
+  try {
+    return existsSync(path.join(process.resourcesPath, DISABLE_APP_UPDATES_MARKER_FILENAME));
+  } catch {
+    return false;
+  }
+}
 
 function isUpdateChannelNotPublished(error: unknown): boolean {
   return (
@@ -197,6 +214,18 @@ export async function checkForAppUpdate({
   releaseChannel: AppReleaseChannel;
   intent: AppUpdateCheckIntent;
 }): Promise<AppUpdateCheckResult> {
+  if (areAppUpdatesDisabledForThisBuild()) {
+    return {
+      hasUpdate: false,
+      readyToInstall: false,
+      currentVersion,
+      latestVersion: currentVersion,
+      body: null,
+      date: null,
+      errorMessage: null,
+    };
+  }
+
   return appUpdateService.checkForAppUpdate({ currentVersion, releaseChannel, intent });
 }
 
@@ -210,6 +239,14 @@ export async function downloadAndInstallUpdate(
   },
   onBeforeQuit?: () => Promise<void>,
 ): Promise<AppUpdateInstallResult> {
+  if (areAppUpdatesDisabledForThisBuild()) {
+    return {
+      installed: false,
+      version: currentVersion,
+      message: "App updates are disabled for this build.",
+    };
+  }
+
   return appUpdateService.downloadAndInstallUpdate(
     { currentVersion, releaseChannel },
     onBeforeQuit,
@@ -225,6 +262,10 @@ export async function installAppUpdateOnQuit({
   releaseChannel: AppReleaseChannel;
   signal: AbortSignal;
 }): Promise<boolean> {
+  if (areAppUpdatesDisabledForThisBuild()) {
+    return false;
+  }
+
   if (
     !shouldInstallAppUpdateOnQuit({
       platform: process.platform,
