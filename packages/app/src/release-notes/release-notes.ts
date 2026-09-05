@@ -20,6 +20,63 @@ export interface ReleaseNote {
 /** Add intentional releases at the top. Git commits never update this list automatically. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: "huzhou-2026-09-06",
+    version: "Huzhou",
+    releasedAt: "2026-09-06",
+    title: {
+      en: "Latest upstream capabilities and stability",
+      zhCN: "同步最新上游能力与稳定性改进",
+    },
+    summary: {
+      en: "The Huzhou release brings Jiaxing's personal enhancements onto the latest Paseo upstream foundation.",
+      zhCN: "Huzhou 版本将 Jiaxing 的个人增强能力整合到最新 Paseo 上游基础之上。",
+    },
+    features: [
+      {
+        title: { en: "Plugin-provided agents", zhCN: "插件提供编码 Agent" },
+        description: {
+          en: "Plugins can provide coding agents, live timeline rows, and client slash commands.",
+          zhCN: "插件现在可以提供编码 Agent、实时 Timeline 行和客户端斜杠命令。",
+        },
+      },
+      {
+        title: { en: "Smoother long-running timelines", zhCN: "长会话 Timeline 更流畅" },
+        description: {
+          en: "Long agent timelines remain responsive across autonomous turns and large streamed responses.",
+          zhCN: "Agent 长时间自主运行及输出大量流式内容时，Timeline 仍能保持流畅响应。",
+        },
+      },
+      {
+        title: { en: "Provider notifications and tool controls", zhCN: "Provider 通知与工具控制" },
+        description: {
+          en: "Provider notifications appear in the timeline, with per-provider control over available Paseo tools.",
+          zhCN: "Provider 通知会显示在 Timeline 中，并可分别控制各 Provider 可使用的 Paseo 工具。",
+        },
+      },
+      {
+        title: { en: "Faster session import", zhCN: "更便捷的会话导入" },
+        description: {
+          en: "Session import is easier to reach and better at finding useful sessions while hiding empty ACP sessions.",
+          zhCN: "会话导入入口更易访问，也能更准确地找到有效会话并隐藏空的 ACP 会话。",
+        },
+      },
+      {
+        title: { en: "Improved diagrams and diffs", zhCN: "图表与差异查看增强" },
+        description: {
+          en: "Mermaid diagrams support a fullscreen web viewer, while file headers and working comparisons stay synchronized in diffs.",
+          zhCN: "Web 端 Mermaid 图表支持全屏查看，Diff 文件头和工作区比较结果也能保持同步。",
+        },
+      },
+      {
+        title: { en: "Agent and desktop reliability", zhCN: "Agent 与桌面端可靠性" },
+        description: {
+          en: "Agent reloads, nested subagent ownership, provider configuration reloads, and macOS desktop updates are more reliable.",
+          zhCN: "改进 Agent 重载、嵌套 Subagent 归属、Provider 配置重载及 macOS 桌面更新的可靠性。",
+        },
+      },
+    ],
+  },
+  {
     id: "jiaxing-2026-08-30",
     version: "Jiaxing",
     releasedAt: "2026-08-30",
