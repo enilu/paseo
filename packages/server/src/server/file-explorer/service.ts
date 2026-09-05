@@ -126,6 +126,7 @@ const IMAGE_MIME_TYPES: Record<string, string> = {
 interface ScopedPathParams {
   root: string;
   relativePath?: string;
+  allowLinkedTargetOutsideWorkspace?: boolean;
 }
 
 interface ScopedPath {
@@ -137,14 +138,17 @@ interface EntryPayloadParams {
   root: string;
   targetPath: string;
   name: string;
-  kind: ExplorerEntryKind;
 }
 
 export async function listDirectoryEntries({
   root,
   relativePath = ".",
 }: ListDirectoryParams): Promise<FileExplorerDirectory> {
-  const directoryPath = await resolveScopedPath({ root, relativePath });
+  const directoryPath = await resolveScopedPath({
+    root,
+    relativePath,
+    allowLinkedTargetOutsideWorkspace: true,
+  });
   const stats = await fs.stat(directoryPath.resolvedPath);
 
   if (!stats.isDirectory()) {
@@ -156,13 +160,11 @@ export async function listDirectoryEntries({
   const entriesWithNulls = await Promise.all(
     dirents.map(async (dirent) => {
       const targetPath = path.join(directoryPath.requestedPath, dirent.name);
-      const kind: ExplorerEntryKind = dirent.isDirectory() ? "directory" : "file";
       try {
         return await buildEntryPayload({
           root,
           targetPath,
           name: dirent.name,
-          kind,
         });
       } catch (error) {
         // Directories can contain dangling links (e.g. AGENTS.md -> CLAUDE.md).
@@ -237,7 +239,11 @@ export async function readExplorerFileBytes({
   root,
   relativePath,
 }: ReadFileParams): Promise<FileExplorerFileBytes> {
-  const filePath = await resolveScopedPath({ root, relativePath });
+  const filePath = await resolveScopedPath({
+    root,
+    relativePath,
+    allowLinkedTargetOutsideWorkspace: true,
+  });
   const handle = await openFileForRead(filePath.resolvedPath);
 
   try {
@@ -292,7 +298,11 @@ export async function streamExplorerFile(
   { root, relativePath }: ReadFileParams,
   consume: (file: FileExplorerFileStream) => Promise<void>,
 ): Promise<void> {
-  const filePath = await resolveScopedPath({ root, relativePath });
+  const filePath = await resolveScopedPath({
+    root,
+    relativePath,
+    allowLinkedTargetOutsideWorkspace: true,
+  });
   const handle = await openFileForRead(filePath.resolvedPath);
 
   try {
@@ -397,7 +407,11 @@ export async function getExplorerFileVersion({
 }: ReadFileParams): Promise<ExplorerFileVersion> {
   const cwd = expandUserPath(root);
   try {
-    const filePath = await resolveScopedPath({ root, relativePath });
+    const filePath = await resolveScopedPath({
+      root,
+      relativePath,
+      allowLinkedTargetOutsideWorkspace: true,
+    });
     const stats = await fs.stat(filePath.resolvedPath, { bigint: true });
     if (!stats.isFile()) {
       return { status: "error", cwd, path: relativePath, error: "Requested path is not a file" };
@@ -427,7 +441,13 @@ export async function resolveExplorerFilePath({
   root,
   relativePath,
 }: ReadFileParams): Promise<string> {
-  return (await resolveScopedPath({ root, relativePath })).resolvedPath;
+  return (
+    await resolveScopedPath({
+      root,
+      relativePath,
+      allowLinkedTargetOutsideWorkspace: true,
+    })
+  ).resolvedPath;
 }
 
 export async function writeExplorerFile({
@@ -538,7 +558,11 @@ export async function getDownloadableFileInfo({ root, relativePath }: ReadFilePa
   mimeType: string;
   size: number;
 }> {
-  const filePath = await resolveScopedPath({ root, relativePath });
+  const filePath = await resolveScopedPath({
+    root,
+    relativePath,
+    allowLinkedTargetOutsideWorkspace: true,
+  });
   const handle = await openFileForRead(filePath.resolvedPath);
 
   try {
@@ -803,6 +827,7 @@ async function isCaseOnlyRename(
 async function resolveScopedPath({
   root,
   relativePath = ".",
+  allowLinkedTargetOutsideWorkspace = false,
 }: ScopedPathParams): Promise<ScopedPath> {
   const workspacePath = expandUserPath(root);
   const requestedPath = resolvePathFromBase(workspacePath, relativePath);
@@ -810,7 +835,11 @@ async function resolveScopedPath({
   const canonicalRoot = await fs.realpath(workspacePath);
   try {
     const canonicalPath = await fs.realpath(requestedPath);
-    assertWithinWorkspace(canonicalRoot, canonicalPath);
+    // The requested path is always lexically workspace-scoped above. Read-only callers may
+    // additionally follow a link placed inside that scope; mutations retain canonical scoping.
+    if (!allowLinkedTargetOutsideWorkspace) {
+      assertWithinWorkspace(canonicalRoot, canonicalPath);
+    }
     return { requestedPath, resolvedPath: canonicalPath };
   } catch (error) {
     if (isMissingEntryError(error)) return { requestedPath, resolvedPath: requestedPath };
@@ -832,17 +861,17 @@ async function buildEntryPayload({
   root,
   targetPath,
   name,
-  kind,
 }: EntryPayloadParams): Promise<FileExplorerEntry> {
   const entryPath = await resolveScopedPath({
     root,
     relativePath: normalizeRelativePath({ root, targetPath }),
+    allowLinkedTargetOutsideWorkspace: true,
   });
   const stats = await fs.stat(entryPath.resolvedPath);
   return {
     name,
     path: normalizeRelativePath({ root, targetPath }),
-    kind,
+    kind: stats.isDirectory() ? "directory" : "file",
     size: stats.size,
     modifiedAt: stats.mtime.toISOString(),
   };

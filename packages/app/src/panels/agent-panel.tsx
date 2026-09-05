@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import type { TFunction } from "i18next";
-import { SquarePen } from "lucide-react-native";
+import { Share2, SquarePen } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
 import React, {
   memo,
   type ReactNode,
@@ -14,7 +15,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet as RNStyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet as RNStyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import invariant from "tiny-invariant";
@@ -25,6 +26,7 @@ import { ArchivedAgentCallout } from "@/components/archived-agent-callout";
 import { KeyboardDock } from "@/components/keyboard-dock";
 import { FileDropZone } from "@/components/file-drop/file-drop-zone";
 import { useRetainedPanelActive } from "@/components/retained-panel";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Composer } from "@/composer";
 import { useWorkspaceHasDiffStat } from "@/composer/workspace-diff-stat";
 import {
@@ -107,6 +109,8 @@ import { applyLegacyDaemonWorkspaceOwnership } from "@/workspace/legacy-daemon-w
 import type { WorkspaceFileOpenRequest } from "@/workspace/file-open";
 import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { buildDraftAgentSetup, type ClientSlashCommand } from "@/client-slash-commands";
+import { createAgentShare } from "@/agent-sharing/create";
+import { confirmDialog } from "@/utils/confirm-dialog";
 
 interface ChatAgentStateShape {
   serverId: string | null;
@@ -1392,6 +1396,14 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
     >
       <View style={styles.root} collapsable={false}>
         <DockedChatSurface disabled={isArchivingCurrentAgent}>
+          {isWeb ? (
+            <AgentShareButton
+              serverId={serverId}
+              agentId={agentId}
+              disabled={isArchivingCurrentAgent}
+              toast={toastApi}
+            />
+          ) : null}
           {contentContainer}
 
           {showHistorySyncError ? (
@@ -1447,6 +1459,79 @@ function DockedChatSurface({ children, disabled }: { children: ReactNode; disabl
         {children}
       </FileDropZone>
     </KeyboardDock>
+  );
+}
+
+const ThemedShare2 = withUnistyles(Share2);
+
+function AgentShareButton({
+  serverId,
+  agentId,
+  disabled,
+  toast,
+}: {
+  serverId: string;
+  agentId: string;
+  disabled: boolean;
+  toast: ToastApi;
+}) {
+  const { t } = useTranslation();
+  const client = useHostRuntimeClient(serverId);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const share = useCallback(async () => {
+    if (!client || isSharing) return;
+    const confirmed = await confirmDialog({
+      title: t("agentPanel.share.title"),
+      message: t("agentPanel.share.warning"),
+      confirmLabel: t("agentPanel.share.confirm"),
+      cancelLabel: t("common.actions.cancel"),
+    });
+    if (!confirmed) return;
+    setIsSharing(true);
+    toast.show(t("agentPanel.share.creating"), { durationMs: null });
+    try {
+      const url = await createAgentShare({ agentId, client });
+      await Clipboard.setStringAsync(url);
+      toast.show(t("agentPanel.share.copied"), {
+        variant: "success",
+        testID: "agent-share-success",
+      });
+    } catch {
+      toast.error(t("agentPanel.share.failed"));
+    } finally {
+      setIsSharing(false);
+    }
+  }, [agentId, client, isSharing, t, toast]);
+
+  const buttonStyle = useCallback(
+    ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
+      styles.shareButton,
+      (hovered || pressed) && styles.shareButtonActive,
+    ],
+    [],
+  );
+
+  return (
+    <Tooltip delayDuration={400} enabledOnDesktop enabledOnMobile={false}>
+      <TooltipTrigger asChild>
+        <Pressable
+          testID="agent-share-button"
+          accessibilityRole="button"
+          accessibilityLabel={t("agentPanel.share.action")}
+          disabled={disabled || isSharing || !client}
+          onPress={share}
+          style={buttonStyle}
+        >
+          {isSharing ? (
+            <ThemedLoadingSpinner size="small" uniProps={foregroundMutedColorMapping} />
+          ) : (
+            <ThemedShare2 size={16} uniProps={foregroundMutedColorMapping} />
+          )}
+        </Pressable>
+      </TooltipTrigger>
+      <TooltipContent side="left">{t("agentPanel.share.action")}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -1828,7 +1913,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   container: {
     flex: 1,
-    backgroundColor: theme.colors.surface0,
   },
   contentContainer: {
     flex: 1,
@@ -1860,6 +1944,23 @@ const styles = StyleSheet.create((theme) => ({
   timelineSyncCalloutText: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
+  },
+  shareButton: {
+    position: "absolute",
+    top: theme.spacing[3],
+    right: theme.spacing[3],
+    width: 32,
+    height: 32,
+    borderRadius: theme.borderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.surface0,
+    borderWidth: theme.borderWidth[1],
+    borderColor: theme.colors.border,
+    zIndex: 20,
+  },
+  shareButtonActive: {
+    backgroundColor: theme.colors.surface2,
   },
   historySyncOverlay: {
     position: "absolute",

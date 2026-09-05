@@ -2897,6 +2897,54 @@ test("sends project.add.request without creating a workspace", async () => {
   });
 });
 
+test("sends project.add.request with an access code", async () => {
+  const logger = createMockLogger();
+  const mock = createMockTransport();
+  const client = new DaemonClient({
+    url: "ws://test",
+    clientId: "clsk_unit_test",
+    logger,
+    reconnect: { enabled: false },
+    transportFactory: () => mock.transport,
+  });
+  clients.push(client);
+
+  const connectPromise = client.connect();
+  mock.triggerOpen();
+  await connectPromise;
+
+  const addPromise = client.addProtectedProject("/tmp/protected", "4821", "req-protected");
+  expect(parseSentFrame(mock.sent[0])).toEqual({
+    type: "project.add.request",
+    requestId: "req-protected",
+    cwd: "/tmp/protected",
+    accessCode: "4821",
+  });
+
+  mock.triggerMessage(
+    wrapSessionMessage({
+      type: "project.add.response",
+      payload: {
+        requestId: "req-protected",
+        project: {
+          projectId: "/tmp/protected",
+          projectDisplayName: "protected",
+          projectCustomName: null,
+          projectRootPath: "/tmp/protected",
+          projectKind: "git",
+          locked: true,
+        },
+        error: null,
+      },
+    }),
+  );
+
+  await expect(addPromise).resolves.toMatchObject({
+    project: { projectId: "/tmp/protected", locked: true },
+    error: null,
+  });
+});
+
 test("searches GitHub repositories through the dotted RPC", async () => {
   const logger = createMockLogger();
   const mock = createMockTransport();

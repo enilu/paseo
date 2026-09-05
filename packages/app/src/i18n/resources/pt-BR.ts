@@ -218,6 +218,16 @@ export const ptBR: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Compartilhar snapshot somente leitura",
+      title: "Compartilhar esta sessão?",
+      warning:
+        "O snapshot inclui prompts, raciocínio e resultados de ferramentas. Qualquer pessoa com o link poderá lê-lo por 7 dias.",
+      confirm: "Criar link",
+      creating: "Criando snapshot criptografado…",
+      copied: "Link de compartilhamento copiado",
+      failed: "Não foi possível criar o link. Tente novamente.",
+    },
     states: {
       notFound: "Agente não encontrado",
       failedToLoad: "Falha ao carregar agente",
@@ -402,6 +412,13 @@ export const ptBR: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "Carregando workspace",
       connecting: "Conectando",
@@ -1253,6 +1270,12 @@ export const ptBR: TranslationResources = {
       createWorktreeFailed: "Falha ao criar worktree",
       composerStateRequired: "O estado do composer é obrigatório",
       selectModel: "Selecione um modelo",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",
@@ -1651,6 +1674,7 @@ export const ptBR: TranslationResources = {
         hostRequired: "Host é obrigatório",
         invalidPort: "A porta deve estar entre 1 e 65535",
         invalidConnection: "Conexão inválida",
+        passwordRequired: "Digite a senha do daemon",
         failedTitle: "Falha na conexão",
         failedToConnect: "Não foi possível conectar a {{endpoint}}.",
         noAdditionalDetails: "{{detail}} (nenhum detalhe adicional fornecido)",
@@ -1949,8 +1973,10 @@ export const ptBR: TranslationResources = {
       notifications: "Notificações",
       permissions: "Permissões",
       diagnostics: "Diagnósticos",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "Sobre",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "Editor",
@@ -2130,6 +2156,26 @@ export const ptBR: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "Plano de fundo personalizado",
+        configured: "Imagem de fundo ativada",
+        notConfigured: "Nenhuma imagem de fundo",
+        description: "PNG, JPEG ou WebP de até 20 MB. A imagem permanece neste dispositivo.",
+        choose: "Escolher imagem",
+        replace: "Substituir imagem",
+        remove: "Remover",
+        opacity: "Opacidade do plano de fundo",
+        opacityHint: "Intensidade da imagem exibida atrás da interface (20–100%)",
+        blur: "Desfoque do plano de fundo",
+        blurHint: "Suaviza a imagem atrás da interface (0–20 px)",
+        errorTitle: "Plano de fundo personalizado",
+        errors: {
+          "unsupported-type": "Escolha uma imagem PNG, JPEG ou WebP.",
+          "too-large": "Escolha uma imagem menor que 20 MB.",
+          saveFailed: "Não foi possível salvar a imagem de fundo.",
+          removeFailed: "Não foi possível remover a imagem de fundo.",
+        },
+      },
       theme: {
         title: "Tema",
         accessibilityLabel: "Tema: {{value}}",

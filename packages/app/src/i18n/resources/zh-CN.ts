@@ -218,6 +218,15 @@ export const zhCN: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "分享只读快照",
+      title: "分享此会话？",
+      warning: "快照包含提示词、推理和工具输出。任何获得链接的人都可以在 7 天内查看。",
+      confirm: "创建分享链接",
+      creating: "正在创建加密快照…",
+      copied: "分享链接已复制",
+      failed: "无法创建分享链接，请重试。",
+    },
     states: {
       notFound: "未找到 Agent",
       failedToLoad: "加载 Agent 失败",
@@ -399,6 +408,13 @@ export const zhCN: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "输入访问码后才能查看或继续这个 workspace。",
+      placeholder: "访问码",
+      unlock: "解锁",
+      unlocking: "正在解锁...",
+      incorrectCode: "访问码不正确",
+    },
     route: {
       loading: "正在加载 workspace",
       connecting: "正在连接",
@@ -1217,6 +1233,12 @@ export const zhCN: TranslationResources = {
       createWorktreeFailed: "创建 worktree 失败",
       composerStateRequired: "Composer 状态必填",
       selectModel: "请选择模型",
+      accessCodeRequired: "请输入访问码",
+    },
+    accessCode: {
+      label: "保护这个 workspace",
+      hint: "其他人可以看到标题，但需要访问码才能打开。",
+      placeholder: "访问码",
     },
     tooltips: {
       project: "Choose the project",
@@ -1604,6 +1626,7 @@ export const zhCN: TranslationResources = {
         hostRequired: "Host 必填",
         invalidPort: "端口必须在 1 到 65535 之间",
         invalidConnection: "无效连接",
+        passwordRequired: "请输入 daemon 密码",
         failedTitle: "连接失败",
         failedToConnect: "无法连接到 {{endpoint}}。",
         noAdditionalDetails: "{{detail}}（未提供更多详情）",
@@ -1896,7 +1919,11 @@ export const zhCN: TranslationResources = {
       notifications: "通知",
       permissions: "权限",
       diagnostics: "诊断",
+      releaseNotes: "版本记录",
       about: "关于",
+    },
+    releaseNotes: {
+      description: "这里手工记录正式发布版本的功能变化，不会根据每次 Git 提交自动生成。",
     },
     layout: en.settings.layout,
     editor: {
@@ -2084,6 +2111,26 @@ export const zhCN: TranslationResources = {
           ghostty: "Ghostty",
           pureBlack: "纯黑",
           auto: "系统",
+        },
+      },
+      background: {
+        title: "自定义背景",
+        configured: "已启用背景图片",
+        notConfigured: "尚未设置背景图片",
+        description: "支持 20 MB 以内的 PNG、JPEG 或 WebP，图片仅保存在当前设备。",
+        choose: "选择图片",
+        replace: "更换图片",
+        remove: "移除",
+        opacity: "背景透明度",
+        opacityHint: "调整背景图片在界面后的显示强度（20–100%）",
+        blur: "背景模糊",
+        blurHint: "柔化界面后的背景图片（0–20 px）",
+        errorTitle: "自定义背景",
+        errors: {
+          "unsupported-type": "请选择 PNG、JPEG 或 WebP 图片。",
+          "too-large": "请选择小于 20 MB 的图片。",
+          saveFailed: "无法保存背景图片。",
+          removeFailed: "无法移除背景图片。",
         },
       },
       detailLevel: {

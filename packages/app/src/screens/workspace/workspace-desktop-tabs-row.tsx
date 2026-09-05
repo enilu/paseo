@@ -83,6 +83,10 @@ import {
   useHorizontalScrollBoundary,
 } from "@/components/ui/horizontal-scroll-boundary";
 import { useSessionStore } from "@/stores/session-store";
+import {
+  titlebarDragSurfaceStyle,
+  titlebarNoDragSurfaceStyle,
+} from "@/components/desktop/titlebar-drag-region";
 
 const DROPDOWN_WIDTH = 220;
 const DEFAULT_INLINE_ADD_BUTTON_RESERVED_WIDTH = 36;
@@ -249,7 +253,11 @@ function WorkspaceNewTabButton({
     </DropdownMenu>
   );
 
-  return placement === "inline" ? <View style={styles.inlineAddButton}>{menu}</View> : menu;
+  return placement === "inline" ? (
+    <View style={[styles.inlineAddButton, titlebarNoDragSurfaceStyle as never]}>{menu}</View>
+  ) : (
+    menu
+  );
 }
 
 function WorkspacePaneToolbarActions({
@@ -299,7 +307,7 @@ function WorkspacePaneToolbarActions({
   if (!showNewTabButton && !splitActionsVisible && !maximizeActionVisible) return null;
 
   return (
-    <ToolbarControls style={styles.paneSplitActions}>
+    <ToolbarControls style={[styles.paneSplitActions, titlebarNoDragSurfaceStyle as never]}>
       {showNewTabButton ? (
         <WorkspaceNewTabButton
           placement="toolbar"
@@ -381,7 +389,10 @@ function WorkspaceExitFocusModeButton({
   }
 
   return (
-    <View style={styles.exitFocusModeSlot} onLayout={onLayout}>
+    <View
+      style={[styles.exitFocusModeSlot, titlebarNoDragSurfaceStyle as never]}
+      onLayout={onLayout}
+    >
       <ToolbarButton
         label={t("workspace.tabs.actions.exitFocusMode")}
         shortcut={focusModeKeys}
@@ -773,6 +784,7 @@ function TabChip({
       isActive && !isFocused && styles.tabActiveUnfocused,
       !isActive && isHovered && styles.tabHovered,
       isWeb && isDragging && ({ cursor: "grabbing" } as object),
+      titlebarNoDragSurfaceStyle as never,
       {
         minWidth: resolvedTabWidth,
         width: resolvedTabWidth,
@@ -826,7 +838,7 @@ function TabChip({
   return (
     <View
       ref={middleClickRef}
-      style={styles.tabHoverFrame}
+      style={[styles.tabHoverFrame, titlebarNoDragSurfaceStyle as never]}
       onPointerEnter={handleTabPointerEnter}
       onPointerLeave={handleTabPointerLeave}
     >
@@ -894,7 +906,7 @@ function TabChip({
               onHoverIn={handleCloseButtonHoverIn}
               onHoverOut={handleCloseButtonHoverOut}
               onPress={handleCloseButtonPress}
-              style={styles.tabCloseButton}
+              style={[styles.tabCloseButton, titlebarNoDragSurfaceStyle as never]}
             >
               {({ hovered: closeHovered, pressed }) => {
                 const highlighted = closeHovered || pressed;
@@ -1313,7 +1325,7 @@ function ResolvedWorkspaceDesktopTabsRow({
 
   const row = (
     <View
-      style={styles.tabsContainer}
+      style={[styles.tabsContainer, titlebarDragSurfaceStyle as never]}
       testID="workspace-tabs-row"
       onLayout={handleTabsContainerLayout}
     >

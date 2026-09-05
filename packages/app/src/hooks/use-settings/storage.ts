@@ -4,6 +4,14 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { DesktopSettings } from "@/desktop/settings/desktop-settings";
 import type { AppLanguage } from "@/i18n/locales";
 import type { SidebarNavPreference } from "@/sidebar-nav/model";
+import type { AttachmentMetadata } from "@/attachments/types";
+import {
+  DEFAULT_BACKGROUND_BLUR,
+  DEFAULT_BACKGROUND_OPACITY,
+  parseBackgroundBlur,
+  parseBackgroundOpacity,
+  parseCustomBackgroundAttachment,
+} from "@/custom-background/model";
 import {
   DEFAULT_SIDEBAR_CHECKS_DISPLAY,
   type SidebarChecksDisplay,
@@ -68,6 +76,9 @@ export interface AppSettings {
   theme: ThemePreference;
   /** Which contributed theme `theme: "plugin"` selects. */
   pluginThemeId: string | null;
+  customBackground: AttachmentMetadata | null;
+  backgroundOpacity: number;
+  backgroundBlur: number;
   language: AppLanguage;
   sendBehavior: SendBehavior;
   serviceUrlBehavior: ServiceUrlBehavior;
@@ -122,6 +133,9 @@ export interface Settings extends AppSettings {
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   theme: DEFAULT_THEME_PREFERENCE,
   pluginThemeId: null,
+  customBackground: null,
+  backgroundOpacity: DEFAULT_BACKGROUND_OPACITY,
+  backgroundBlur: DEFAULT_BACKGROUND_BLUR,
   language: "system",
   sendBehavior: "steer",
   serviceUrlBehavior: "ask",
@@ -195,6 +209,18 @@ const StoredAppSettingsSchema = z
   .looseObject({
     theme: ThemePreferenceSchema.catch(DEFAULT_THEME_PREFERENCE),
     pluginThemeId: z.string().nullable().catch(null),
+    customBackground: z
+      .unknown()
+      .transform((value) => parseCustomBackgroundAttachment(value))
+      .catch(null),
+    backgroundOpacity: z
+      .unknown()
+      .transform((value) => parseBackgroundOpacity(value) ?? DEFAULT_BACKGROUND_OPACITY)
+      .catch(DEFAULT_BACKGROUND_OPACITY),
+    backgroundBlur: z
+      .unknown()
+      .transform((value) => parseBackgroundBlur(value) ?? DEFAULT_BACKGROUND_BLUR)
+      .catch(DEFAULT_BACKGROUND_BLUR),
     language: z
       .enum(["system", "ar", "en", "es", "fr", "ja", "ko", "pt-BR", "ru", "zh-CN"])
       .catch("system"),

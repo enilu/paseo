@@ -23,6 +23,11 @@ export const titlebarDragSurfaceStyle: React.CSSProperties = {
   WebkitAppRegion: "drag",
 };
 
+export const titlebarNoDragSurfaceStyle: React.CSSProperties = {
+  // @ts-expect-error — WebkitAppRegion is not in CSSProperties
+  WebkitAppRegion: "no-drag",
+};
+
 const DRAG_OVERLAY_STYLE: React.CSSProperties = {
   ...titlebarDragSurfaceStyle,
   top: 0,
@@ -38,8 +43,7 @@ const TOP_RESIZER_STYLE: React.CSSProperties = {
   top: 0,
   width: "100%",
   height: 4,
-  // @ts-expect-error — WebkitAppRegion is not in CSSProperties
-  WebkitAppRegion: "no-drag",
+  ...titlebarNoDragSurfaceStyle,
 };
 
 /**

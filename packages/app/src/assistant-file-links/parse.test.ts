@@ -310,6 +310,22 @@ describe("parseAssistantFileLink", () => {
     });
   });
 
+  it("parses browser-encoded absolute Windows hrefs", () => {
+    const href =
+      "C:/%5Cworkspace%5Criskbird-system%5Csessions%5C20260813%5Cquery-history-recent-records-migration-impact-analysis.md";
+
+    expect(
+      parseAssistantFileLink(href, {
+        workspaceRoot: "C:/workspace/riskbird-system",
+      }),
+    ).toEqual({
+      raw: href,
+      path: "C:/workspace/riskbird-system/sessions/20260813/query-history-recent-records-migration-impact-analysis.md",
+      lineStart: undefined,
+      lineEnd: undefined,
+    });
+  });
+
   it("parses absolute Windows hrefs with VS Code-style line suffixes inside the active workspace", () => {
     expect(
       parseAssistantFileLink("C:/repo/src/app.tsx:12-20", {

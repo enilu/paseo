@@ -1421,7 +1421,6 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     minWidth: 0,
     minHeight: 0,
-    backgroundColor: theme.colors.surface0,
     overflow: "hidden",
   },
   paneTabs: {

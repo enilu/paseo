@@ -8,6 +8,9 @@ import {
 } from "@/plugins/themes";
 import { PLUGIN_THEME_NAMES, PLUGIN_THEME_PREFERENCE, THEME_TO_UNISTYLES } from "@/styles/theme";
 import { applyAppearance } from "./apply";
+import { CustomBackgroundProvider } from "@/custom-background/context";
+import { syncCustomBackgroundGarbageCollectionRetention } from "@/custom-background/service";
+import { useCustomBackgroundUrl } from "@/custom-background/use-custom-background-url";
 
 interface ContributedThemes {
   options: PluginThemeOption[];
@@ -44,6 +47,7 @@ function applyTheme({ preference, contributedTheme }: ApplyThemeInput): void {
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const { settings, updateSettings, isLoading } = useAppSettings();
+  const customBackgroundUrl = useCustomBackgroundUrl(settings.customBackground);
   const options = usePluginThemeCatalog();
   const selected = useMemo(() => {
     if (settings.theme !== PLUGIN_THEME_PREFERENCE) return null;
@@ -52,6 +56,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
+    syncCustomBackgroundGarbageCollectionRetention(settings.customBackground !== null);
     applyTheme({ preference: settings.theme, contributedTheme: selected });
     applyAppearance({
       uiFontFamily: settings.uiFontFamily,
@@ -60,6 +65,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       contentFontSize: settings.contentFontSize,
       codeFontSize: settings.codeFontSize,
       syntaxTheme: settings.syntaxTheme,
+      customBackgroundEnabled: customBackgroundUrl !== null,
+      backgroundOpacity: settings.backgroundOpacity,
     });
   }, [
     isLoading,
@@ -71,6 +78,9 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     settings.contentFontSize,
     settings.codeFontSize,
     settings.syntaxTheme,
+    settings.customBackground,
+    customBackgroundUrl,
+    settings.backgroundOpacity,
   ]);
 
   const select = useCallback(
@@ -86,7 +96,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({ options, selected, select }), [options, selected, select]);
 
   return (
-    <ContributedThemesContext.Provider value={value}>{children}</ContributedThemesContext.Provider>
+    <ContributedThemesContext.Provider value={value}>
+      <CustomBackgroundProvider attachment={settings.customBackground} url={customBackgroundUrl}>
+        {children}
+      </CustomBackgroundProvider>
+    </ContributedThemesContext.Provider>
   );
 }
 

@@ -220,6 +220,16 @@ export const fr: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Partager un instantané en lecture seule",
+      title: "Partager cette session ?",
+      warning:
+        "L’instantané inclut les messages, le raisonnement et les résultats des outils. Toute personne disposant du lien peut le lire pendant 7 jours.",
+      confirm: "Créer le lien",
+      creating: "Création de l’instantané chiffré…",
+      copied: "Lien de partage copié",
+      failed: "Impossible de créer le lien. Réessayez.",
+    },
     states: {
       notFound: "Agentintrouvable",
       failedToLoad: "Échec du chargement de l'agent",
@@ -403,6 +413,13 @@ export const fr: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "Chargement de l'espace de travail",
       connecting: "De liaison",
@@ -1262,6 +1279,12 @@ export const fr: TranslationResources = {
       createWorktreeFailed: "Échec de la création de l'arbre de travail",
       composerStateRequired: "L'état du compositeur est requis",
       selectModel: "Sélectionnez un modèle",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",
@@ -1669,6 +1692,7 @@ export const fr: TranslationResources = {
         hostRequired: "Hostest requis",
         invalidPort: "Le port doit être compris entre 1 et 65535",
         invalidConnection: "Connexion invalide",
+        passwordRequired: "Saisissez le mot de passe du daemon",
         failedTitle: "La connexion a échoué",
         failedToConnect: "Nous n'avons pas réussi à nous connecter à{{endpoint}}.",
         noAdditionalDetails: "{{detail}}(aucun détail supplémentaire fourni)",
@@ -1968,8 +1992,10 @@ export const fr: TranslationResources = {
       notifications: "Notifications",
       permissions: "Autorisations",
       diagnostics: "Diagnostic",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "À propos",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "Éditeur",
@@ -2150,6 +2176,26 @@ export const fr: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "Arrière-plan personnalisé",
+        configured: "Image d’arrière-plan activée",
+        notConfigured: "Aucune image d’arrière-plan",
+        description: "PNG, JPEG ou WebP jusqu’à 20 Mo. L’image reste sur cet appareil.",
+        choose: "Choisir une image",
+        replace: "Remplacer l’image",
+        remove: "Supprimer",
+        opacity: "Opacité de l’arrière-plan",
+        opacityHint: "Intensité d’affichage de l’image derrière l’interface (20–100 %)",
+        blur: "Flou de l’arrière-plan",
+        blurHint: "Adoucit l’image derrière l’interface (0–20 px)",
+        errorTitle: "Arrière-plan personnalisé",
+        errors: {
+          "unsupported-type": "Choisissez une image PNG, JPEG ou WebP.",
+          "too-large": "Choisissez une image de moins de 20 Mo.",
+          saveFailed: "Impossible d’enregistrer l’image d’arrière-plan.",
+          removeFailed: "Impossible de supprimer l’image d’arrière-plan.",
+        },
+      },
       theme: {
         title: "Thème",
         accessibilityLabel: "Thème:{{value}}",

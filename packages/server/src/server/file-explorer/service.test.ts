@@ -5,8 +5,10 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   stat,
+  symlink,
   truncate,
   writeFile,
 } from "node:fs/promises";
@@ -18,7 +20,9 @@ import {
   createExplorerEntry,
   deleteExplorerEntry,
   duplicateExplorerEntry,
+  getDownloadableFileInfo,
   getExplorerFileVersion,
+  listDirectoryEntries,
   readExplorerFile,
   renameExplorerEntry,
   streamExplorerFile,
@@ -34,6 +38,102 @@ async function createTempDir(prefix: string): Promise<string> {
 }
 
 describe("file explorer service", () => {
+  it("follows workspace-contained directory links for read-only access", async () => {
+    const root = await createTempDir("paseo-linked-workspace-");
+    const linkedTarget = await createTempDir("paseo-linked-target-");
+    try {
+      await mkdir(path.join(root, "projects"));
+      await mkdir(path.join(linkedTarget, "doc"));
+      await writeFile(path.join(linkedTarget, "doc", "guide.md"), "# linked guide\n", "utf8");
+      await symlink(
+        linkedTarget,
+        path.join(root, "projects", "LinkedProject"),
+        process.platform === "win32" ? "junction" : "dir",
+      );
+
+      const rootListing = await listDirectoryEntries({ root, relativePath: "projects" });
+      expect(rootListing.entries).toEqual([
+        expect.objectContaining({ name: "LinkedProject", kind: "directory" }),
+      ]);
+
+      const linkedListing = await listDirectoryEntries({
+        root,
+        relativePath: "projects/LinkedProject/doc",
+      });
+      expect(linkedListing.entries).toEqual([
+        expect.objectContaining({ name: "guide.md", kind: "file" }),
+      ]);
+
+      const file = await readExplorerFile({
+        root,
+        relativePath: "projects/LinkedProject/doc/guide.md",
+      });
+      expect(file.content).toBe("# linked guide\n");
+
+      const version = await getExplorerFileVersion({
+        root,
+        relativePath: "projects/LinkedProject/doc/guide.md",
+      });
+      expect(version.status).toBe("ready");
+
+      const download = await getDownloadableFileInfo({
+        root,
+        relativePath: "projects/LinkedProject/doc/guide.md",
+      });
+      expect(download.fileName).toBe("guide.md");
+      expect(download.absolutePath).toBe(
+        await realpath(path.join(linkedTarget, "doc", "guide.md")),
+      );
+
+      await expect(
+        readExplorerFile({
+          root,
+          relativePath: path.join(linkedTarget, "doc", "guide.md"),
+        }),
+      ).rejects.toThrow("Access outside of workspace is not allowed");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+      await rm(linkedTarget, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps write access blocked through directory links that leave the workspace", async () => {
+    const root = await createTempDir("paseo-linked-workspace-write-");
+    const linkedTarget = await createTempDir("paseo-linked-target-write-");
+    try {
+      await mkdir(path.join(root, "projects"));
+      await writeFile(path.join(linkedTarget, "notes.txt"), "before", "utf8");
+      await symlink(
+        linkedTarget,
+        path.join(root, "projects", "LinkedProject"),
+        process.platform === "win32" ? "junction" : "dir",
+      );
+      const readable = await getExplorerFileVersion({
+        root,
+        relativePath: "projects/LinkedProject/notes.txt",
+      });
+      expect(readable.status).toBe("ready");
+      if (readable.status !== "ready") return;
+
+      const result = await writeExplorerFile({
+        root,
+        relativePath: "projects/LinkedProject/notes.txt",
+        content: "after",
+        expectedModifiedAt: readable.modifiedAt,
+        expectedRevision: readable.revision,
+      });
+
+      expect(result).toEqual({
+        status: "error",
+        error: "Access outside of workspace is not allowed",
+      });
+      expect(await readFile(path.join(linkedTarget, "notes.txt"), "utf8")).toBe("before");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+      await rm(linkedTarget, { recursive: true, force: true });
+    }
+  });
+
   it("atomically writes an existing text file at the expected revision", async () => {
     const root = await createTempDir("paseo-file-write-");
     try {

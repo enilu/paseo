@@ -93,6 +93,8 @@ import { KeyboardShiftProvider } from "@/hooks/use-keyboard-shift-style";
 import { useCompactWebViewportZoomLock } from "@/hooks/use-compact-web-viewport-zoom-lock";
 import { useOpenProject } from "@/hooks/use-open-project";
 import { useAppSettings } from "@/hooks/use-settings";
+import { CustomBackgroundLayer } from "@/custom-background/custom-background-layer";
+import { useCustomBackground } from "@/custom-background/context";
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { useOpenAgentListGesture } from "@/mobile-panels/gestures";
 import { MobilePanelsProvider, useIsMobilePanelActive } from "@/mobile-panels/provider";
@@ -139,6 +141,7 @@ import {
   WEB_NOTIFICATION_CLICK_EVENT,
   type WebNotificationClickDetail,
 } from "@/utils/os-notifications";
+import { ConfiguredLocalDaemonPasswordGate } from "@/components/configured-local-daemon-password-gate";
 
 polyfillNavigator();
 polyfillCrypto();
@@ -470,6 +473,8 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   const isDesktopAgentListOpen = usePanelStore((state) => state.desktop.agentListOpen);
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const { width: viewportWidth } = useWindowDimensions();
+  const { url: customBackgroundUrl } = useCustomBackground();
+  const appSurfaceStyle = customBackgroundUrl ? layoutStyles.rootFill : layoutStyles.surfaceFill;
 
   const cycleTheme = useCallback(() => {
     void updateSettings({ theme: getNextThemePreference(settings.theme) });
@@ -570,7 +575,8 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   );
 
   const surface = (
-    <View style={layoutStyles.surfaceFill}>
+    <View style={appSurfaceStyle}>
+      <CustomBackgroundLayer opacity={1} blur={settings.backgroundBlur} />
       {workspaceChrome}
       {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
         <WindowChromeRegion corners="top-left">
@@ -649,7 +655,7 @@ function MobileGestureWrapper({
 
   return (
     <GestureDetector gesture={openGesture} touchAction={MOBILE_WEB_GESTURE_TOUCH_ACTION}>
-      <View collapsable={false} style={layoutStyles.surfaceFill}>
+      <View collapsable={false} style={layoutStyles.rootFill}>
         {children}
       </View>
     </GestureDetector>
@@ -931,6 +937,7 @@ function RuntimeProviders({ children }: { children: ReactNode }) {
   return (
     <HostRuntimeBootstrapProvider>
       <PushNotificationRouter />
+      <ConfiguredLocalDaemonPasswordGate />
       <SidebarCalloutProvider>
         <ProvidersWrapper>{children}</ProvidersWrapper>
       </SidebarCalloutProvider>
@@ -965,7 +972,7 @@ function RootProviders({ children }: { children: ReactNode }) {
 function RootAppTree() {
   return (
     <GestureHandlerRootView style={flexStyle}>
-      <View style={layoutStyles.surfaceFill}>
+      <View style={layoutStyles.rootFill}>
         <RootProviders>
           <RuntimeProviders>
             <AppShell />
@@ -1001,6 +1008,10 @@ export default function RootLayout() {
 }
 
 const layoutStyles = StyleSheet.create((theme) => ({
+  rootFill: {
+    flex: 1,
+    position: "relative",
+  },
   surfaceFill: {
     flex: 1,
     backgroundColor: theme.colors.surface0,

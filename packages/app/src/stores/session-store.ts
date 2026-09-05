@@ -106,6 +106,8 @@ export interface Agent {
 
 export interface WorkspaceDescriptor {
   id: string;
+  createdAt?: Date;
+  activityAt?: Date | null;
   projectId: string;
   projectDisplayName: string;
   projectCustomName?: string | null;
@@ -119,6 +121,7 @@ export interface WorkspaceDescriptor {
   title?: string | null;
   pinnedAt?: string | null;
   labels?: string[];
+  locked?: boolean;
   status: WorkspaceDescriptorPayload["status"];
   statusEnteredAt: Date | null;
   archivingAt: string | null;
@@ -140,6 +143,8 @@ export function normalizeWorkspaceDescriptor(
       : null;
   return {
     id: normalizeWorkspaceOpaqueId(payload.id) ?? payload.id,
+    createdAt: payload.createdAt ? new Date(payload.createdAt) : undefined,
+    activityAt: normalizeOptionalDate(payload.activityAt),
     projectId: payload.projectId,
     projectDisplayName: payload.projectDisplayName,
     projectCustomName: payload.projectCustomName ?? null,
@@ -157,6 +162,7 @@ export function normalizeWorkspaceDescriptor(
     pinnedAt: payload.pinnedAt ?? null,
     // COMPAT(workspaceLabels): old daemons omit assignments.
     labels: payload.labels ?? [],
+    locked: payload.locked === true,
     status: payload.status,
     statusEnteredAt,
     archivingAt: payload.archivingAt ?? null,
@@ -169,6 +175,12 @@ export function normalizeWorkspaceDescriptor(
   };
 }
 
+function normalizeOptionalDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export interface ProjectDescriptor {
   projectId: string;
   projectKey?: string | null;
@@ -178,6 +190,7 @@ export interface ProjectDescriptor {
   projectIconRevision?: string;
   projectRootPath: string;
   projectKind: WorkspaceDescriptorPayload["projectKind"];
+  locked?: boolean;
 }
 
 export function normalizeProjectDescriptor(
@@ -192,6 +205,7 @@ export function normalizeProjectDescriptor(
     projectIconRevision: payload.projectIconRevision,
     projectRootPath: payload.projectRootPath,
     projectKind: payload.projectKind,
+    locked: payload.locked,
   };
 }
 

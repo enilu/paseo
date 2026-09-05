@@ -218,6 +218,16 @@ export const ru: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Поделиться снимком только для чтения",
+      title: "Поделиться этим сеансом?",
+      warning:
+        "Снимок содержит запросы, рассуждения и вывод инструментов. Любой, у кого есть ссылка, сможет читать его 7 дней.",
+      confirm: "Создать ссылку",
+      creating: "Создание зашифрованного снимка…",
+      copied: "Ссылка скопирована",
+      failed: "Не удалось создать ссылку. Повторите попытку.",
+    },
     states: {
       notFound: "Агент не найден",
       failedToLoad: "Не удалось загрузить агента",
@@ -401,6 +411,13 @@ export const ru: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "Загрузка рабочего пространства",
       connecting: "Подключение",
@@ -1244,6 +1261,12 @@ export const ru: TranslationResources = {
       createWorktreeFailed: "Не удалось создать worktree.",
       composerStateRequired: "Редактор сообщения ещё не готов.",
       selectModel: "Выберите модель",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Выберите проект",
@@ -1648,6 +1671,7 @@ export const ru: TranslationResources = {
         hostRequired: "Требуется хост",
         invalidPort: "Порт должен быть в диапазоне от 1 до 65535.",
         invalidConnection: "Неверное соединение",
+        passwordRequired: "Введите пароль daemon",
         failedTitle: "Соединение не удалось",
         failedToConnect: "Не удалось подключиться к {{endpoint}}.",
         noAdditionalDetails: "{{detail}} (дополнительные сведения отсутствуют)",
@@ -1948,8 +1972,10 @@ export const ru: TranslationResources = {
       notifications: "Уведомления",
       permissions: "Разрешения",
       diagnostics: "Диагностика",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "О приложении",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "Редактор",
@@ -2132,6 +2158,27 @@ export const ru: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "Пользовательский фон",
+        configured: "Фоновое изображение включено",
+        notConfigured: "Фоновое изображение не выбрано",
+        description:
+          "PNG, JPEG или WebP размером до 20 МБ. Изображение хранится только на этом устройстве.",
+        choose: "Выбрать изображение",
+        replace: "Заменить изображение",
+        remove: "Удалить",
+        opacity: "Прозрачность фона",
+        opacityHint: "Интенсивность изображения за интерфейсом (20–100%)",
+        blur: "Размытие фона",
+        blurHint: "Смягчает изображение за интерфейсом (0–20 пкс)",
+        errorTitle: "Пользовательский фон",
+        errors: {
+          "unsupported-type": "Выберите изображение PNG, JPEG или WebP.",
+          "too-large": "Выберите изображение размером менее 20 МБ.",
+          saveFailed: "Не удалось сохранить фоновое изображение.",
+          removeFailed: "Не удалось удалить фоновое изображение.",
+        },
+      },
       theme: {
         title: "Тема",
         accessibilityLabel: "Тема: {{value}}",

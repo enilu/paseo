@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
-import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Scripts, useLocation } from "@tanstack/react-router";
 import type { ReleaseChannels, ReleaseInfo } from "~/latest-release";
 import type { VisitorPlatform } from "~/platform";
 import { getVisitorPlatform } from "~/platform";
@@ -91,12 +91,19 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+  const isSharedSession = useLocation({
+    select: (location) => location.pathname.startsWith("/share/"),
+  });
   return (
     <html lang="en">
       <head>
         <HeadContent />
-        <script async src="https://plausible.io/js/pa-cKNUoWbeH_Iksb2fh82s3.js" />
-        <script dangerouslySetInnerHTML={PLAUSIBLE_INIT_SCRIPT} />
+        {isSharedSession ? null : (
+          <>
+            <script async src="https://plausible.io/js/pa-cKNUoWbeH_Iksb2fh82s3.js" />
+            <script dangerouslySetInnerHTML={PLAUSIBLE_INIT_SCRIPT} />
+          </>
+        )}
       </head>
       <body className="antialiased bg-background text-foreground">
         {children}

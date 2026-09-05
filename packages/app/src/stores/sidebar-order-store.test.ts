@@ -2,17 +2,41 @@ import { describe, expect, it } from "vitest";
 import { migrateSidebarOrderState } from "./sidebar-order-store";
 
 describe("migrateSidebarOrderState", () => {
-  it("prefixes legacy per-server workspace order with the source server id", () => {
-    const migrated = migrateSidebarOrderState({
-      projectOrderByServerId: {
-        "host-a": ["project-a"],
-        "host-b": ["project-a"],
+  it("drops saved project workspace order from older persisted versions", () => {
+    const migrated = migrateSidebarOrderState(
+      {
+        projectOrder: ["project-a"],
+        workspaceOrderByProject: {
+          "project-a": ["host-b:main", "host-a:feature"],
+        },
+        workspaceOrderByServerAndProject: {
+          "host-a::project-a": ["main"],
+        },
       },
-      workspaceOrderByServerAndProject: {
-        "host-a::project-a": ["main", "feature"],
-        "host-b::project-a": ["main"],
-      },
+      1,
+    );
+
+    expect(migrated).toEqual({
+      projectOrder: ["project-a"],
+      pinnedWorkspaceOrder: [],
+      workspaceOrderByProject: {},
     });
+  });
+
+  it("prefixes legacy per-server workspace order with the source server id for current storage", () => {
+    const migrated = migrateSidebarOrderState(
+      {
+        projectOrderByServerId: {
+          "host-a": ["project-a"],
+          "host-b": ["project-a"],
+        },
+        workspaceOrderByServerAndProject: {
+          "host-a::project-a": ["main", "feature"],
+          "host-b::project-a": ["main"],
+        },
+      },
+      2,
+    );
 
     expect(migrated).toEqual({
       projectOrder: ["project-a"],

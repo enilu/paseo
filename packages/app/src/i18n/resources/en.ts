@@ -215,6 +215,16 @@ export const en = {
     },
   },
   agentPanel: {
+    share: {
+      action: "Share read-only snapshot",
+      title: "Share this session?",
+      warning:
+        "The snapshot includes prompts, reasoning, and tool output. Anyone with the link can read it for 7 days.",
+      confirm: "Create share link",
+      creating: "Creating encrypted snapshot…",
+      copied: "Share link copied",
+      failed: "Couldn't create share link. Try again.",
+    },
     states: {
       notFound: "Agent not found",
       failedToLoad: "Failed to load agent",
@@ -397,6 +407,13 @@ export const en = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "Loading workspace",
       connecting: "Connecting",
@@ -1237,6 +1254,12 @@ export const en = {
       createWorktreeFailed: "Failed to create worktree",
       composerStateRequired: "Composer state is required",
       selectModel: "Select a model",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",
@@ -1631,6 +1654,7 @@ export const en = {
         hostRequired: "Host is required",
         invalidPort: "Port must be between 1 and 65535",
         invalidConnection: "Invalid connection",
+        passwordRequired: "Enter the daemon password",
         failedTitle: "Connection failed",
         failedToConnect: "We failed to connect to {{endpoint}}.",
         noAdditionalDetails: "{{detail}} (no additional details provided)",
@@ -1927,7 +1951,12 @@ export const en = {
       notifications: "Notifications",
       permissions: "Permissions",
       diagnostics: "Diagnostics",
+      releaseNotes: "Release notes",
       about: "About",
+    },
+    releaseNotes: {
+      description:
+        "A manually maintained history of intentional Paseo releases. Entries are added for published versions, not for individual commits.",
     },
     layout: {
       openInSidePane: {
@@ -2207,6 +2236,26 @@ export const en = {
           ghostty: "Ghostty",
           pureBlack: "Pure black",
           auto: "System",
+        },
+      },
+      background: {
+        title: "Custom background",
+        configured: "Background image enabled",
+        notConfigured: "No background image",
+        description: "PNG, JPEG, or WebP up to 20 MB. The image stays on this device.",
+        choose: "Choose image",
+        replace: "Replace image",
+        remove: "Remove",
+        opacity: "Background opacity",
+        opacityHint: "How strongly the image appears behind the interface (20–100%)",
+        blur: "Background blur",
+        blurHint: "Soften the image behind the interface (0–20 px)",
+        errorTitle: "Custom background",
+        errors: {
+          "unsupported-type": "Choose a PNG, JPEG, or WebP image.",
+          "too-large": "Choose an image smaller than 20 MB.",
+          saveFailed: "The background image could not be saved.",
+          removeFailed: "The background image could not be removed.",
         },
       },
       detailLevel: {

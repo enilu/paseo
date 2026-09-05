@@ -218,6 +218,16 @@ export const ko: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "읽기 전용 스냅샷 공유",
+      title: "이 세션을 공유할까요?",
+      warning:
+        "스냅샷에는 프롬프트, 추론 및 도구 출력이 포함됩니다. 링크가 있는 사람은 7일 동안 읽을 수 있습니다.",
+      confirm: "공유 링크 만들기",
+      creating: "암호화된 스냅샷 만드는 중…",
+      copied: "공유 링크가 복사되었습니다",
+      failed: "공유 링크를 만들 수 없습니다. 다시 시도하세요.",
+    },
     states: {
       notFound: "에이전트를 찾을 수 없습니다",
       failedToLoad: "에이전트를 불러오지 못했습니다",
@@ -400,6 +410,13 @@ export const ko: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "워크스페이스 불러오는 중",
       connecting: "연결 중",
@@ -1235,6 +1252,12 @@ export const ko: TranslationResources = {
       createWorktreeFailed: "워크트리를 생성하지 못했습니다",
       composerStateRequired: "작성기 상태가 필요합니다",
       selectModel: "모델을 선택하세요",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",
@@ -1631,6 +1654,7 @@ export const ko: TranslationResources = {
         hostRequired: "호스트를 입력하세요",
         invalidPort: "포트는 1에서 65535 사이여야 합니다",
         invalidConnection: "잘못된 연결",
+        passwordRequired: "daemon 비밀번호를 입력하세요",
         failedTitle: "연결 실패",
         failedToConnect: "{{endpoint}}에 연결하지 못했습니다.",
         noAdditionalDetails: "{{detail}} (추가 세부 정보 없음)",
@@ -1927,8 +1951,10 @@ export const ko: TranslationResources = {
       notifications: "알림",
       permissions: "권한",
       diagnostics: "진단",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "정보",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "편집기",
@@ -2107,6 +2133,27 @@ export const ko: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "사용자 지정 배경",
+        configured: "배경 이미지가 활성화됨",
+        notConfigured: "배경 이미지 없음",
+        description:
+          "20MB 이하의 PNG, JPEG 또는 WebP를 지원합니다. 이미지는 이 기기에만 저장됩니다.",
+        choose: "이미지 선택",
+        replace: "이미지 변경",
+        remove: "제거",
+        opacity: "배경 불투명도",
+        opacityHint: "인터페이스 뒤에 표시되는 이미지의 강도(20~100%)",
+        blur: "배경 흐림",
+        blurHint: "인터페이스 뒤의 이미지를 부드럽게 흐립니다(0~20px)",
+        errorTitle: "사용자 지정 배경",
+        errors: {
+          "unsupported-type": "PNG, JPEG 또는 WebP 이미지를 선택하세요.",
+          "too-large": "20MB보다 작은 이미지를 선택하세요.",
+          saveFailed: "배경 이미지를 저장할 수 없습니다.",
+          removeFailed: "배경 이미지를 제거할 수 없습니다.",
+        },
+      },
       theme: {
         title: "테마",
         accessibilityLabel: "테마: {{value}}",

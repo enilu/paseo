@@ -102,7 +102,11 @@ import {
   shouldShowWorkspaceSetup,
   useWorkspaceSetupStore,
 } from "@/stores/workspace-setup-store";
-import { useWorkspace } from "@/stores/session-store-hooks";
+import { useProject, useWorkspace } from "@/stores/session-store-hooks";
+import { useIsWorkspaceUnlocked } from "@/stores/workspace-access-store";
+import { useIsProjectUnlocked } from "@/stores/project-access-store";
+import { WorkspaceAccessGate } from "./workspace-access-gate";
+import { ProjectAccessGate } from "./project-access-gate";
 import { useWorkspaceTerminalSessionRetention } from "@/terminal/hooks/use-workspace-terminal-session-retention";
 import type { CheckoutStatusPayload } from "@/git/use-status-query";
 import { confirmDialog } from "@/utils/confirm-dialog";
@@ -853,12 +857,36 @@ export const WorkspaceScreen = memo(function WorkspaceScreen({
   recoveryAgentId,
 }: WorkspaceScreenProps) {
   const navigationFocused = useIsFocused();
+  const normalizedServerId = trimNonEmpty(decodeSegment(serverId)) ?? "";
+  const normalizedWorkspaceId = resolveWorkspaceRouteId({ routeWorkspaceId: workspaceId }) ?? "";
+  const workspace = useWorkspace(normalizedServerId, normalizedWorkspaceId);
+  const project = useProject(normalizedServerId, workspace?.projectId ?? null);
+  const isProjectUnlocked = useIsProjectUnlocked(normalizedServerId, project?.projectId ?? "");
+  const isWorkspaceUnlocked = useIsWorkspaceUnlocked(normalizedServerId, normalizedWorkspaceId);
   useEffect(() => {
     traceInstant("paseo.workspace.mount", { serverId, workspaceId });
     return () => {
       traceInstant("paseo.workspace.unmount", { serverId, workspaceId });
     };
   }, [serverId, workspaceId]);
+  if (project?.locked && !isProjectUnlocked) {
+    return (
+      <ProjectAccessGate
+        serverId={normalizedServerId}
+        projectId={project.projectId}
+        projectName={project.projectCustomName ?? project.projectDisplayName}
+      />
+    );
+  }
+  if (workspace?.locked && !isWorkspaceUnlocked) {
+    return (
+      <WorkspaceAccessGate
+        serverId={normalizedServerId}
+        workspaceId={normalizedWorkspaceId}
+        workspaceName={workspace.name}
+      />
+    );
+  }
   return (
     <WorkspaceScreenContent
       serverId={serverId}
@@ -4374,7 +4402,6 @@ const styles = StyleSheet.create((theme) => ({
   content: {
     flex: 1,
     minHeight: 0,
-    backgroundColor: theme.colors.surface0,
     position: "relative",
   },
   mobileMountedTabSlot: {
@@ -4383,7 +4410,6 @@ const styles = StyleSheet.create((theme) => ({
   contentPlaceholder: {
     flex: 1,
     minHeight: 0,
-    backgroundColor: theme.colors.surface0,
   },
   emptyState: {
     flex: 1,

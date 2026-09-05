@@ -218,6 +218,16 @@ export const ar: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "مشاركة لقطة للقراءة فقط",
+      title: "هل تريد مشاركة هذه الجلسة؟",
+      warning:
+        "تتضمن اللقطة المطالبات والاستدلال ومخرجات الأدوات. يمكن لأي شخص لديه الرابط قراءتها لمدة 7 أيام.",
+      confirm: "إنشاء رابط المشاركة",
+      creating: "جارٍ إنشاء لقطة مشفرة…",
+      copied: "تم نسخ رابط المشاركة",
+      failed: "تعذر إنشاء رابط المشاركة. حاول مرة أخرى.",
+    },
     states: {
       notFound: "لم يتم العثور على Agent",
       failedToLoad: "فشل تحميل الوكيل",
@@ -399,6 +409,13 @@ export const ar: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "جارٍ تحميل مساحة العمل",
       connecting: "الاتصال",
@@ -1228,6 +1245,12 @@ export const ar: TranslationResources = {
       createWorktreeFailed: "فشل في إنشاء شجرة العمل",
       composerStateRequired: "حالة الملحن مطلوبة",
       selectModel: "اختر نموذجا",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",
@@ -1621,6 +1644,7 @@ export const ar: TranslationResources = {
         hostRequired: "مطلوب Host",
         invalidPort: "يجب أن يكون المنفذ بين 1 و65535",
         invalidConnection: "اتصال غير صالح",
+        passwordRequired: "أدخل كلمة مرور daemon",
         failedTitle: "فشل الاتصال",
         failedToConnect: "فشلنا في الاتصال بـ{{endpoint}}.",
         noAdditionalDetails: "{{detail}}(لم يتم تقديم تفاصيل إضافية)",
@@ -1917,8 +1941,10 @@ export const ar: TranslationResources = {
       notifications: "الإشعارات",
       permissions: "الأذونات",
       diagnostics: "التشخيص",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "عن",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "المحرر",
@@ -2096,6 +2122,26 @@ export const ar: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "خلفية مخصصة",
+        configured: "تم تفعيل صورة الخلفية",
+        notConfigured: "لم يتم تعيين صورة خلفية",
+        description: "PNG أو JPEG أو WebP بحجم يصل إلى 20 ميغابايت. تبقى الصورة على هذا الجهاز.",
+        choose: "اختيار صورة",
+        replace: "استبدال الصورة",
+        remove: "إزالة",
+        opacity: "عتامة الخلفية",
+        opacityHint: "مدى وضوح الصورة خلف الواجهة (20–100٪)",
+        blur: "تمويه الخلفية",
+        blurHint: "تنعيم الصورة خلف الواجهة (0–20 بكسل)",
+        errorTitle: "خلفية مخصصة",
+        errors: {
+          "unsupported-type": "اختر صورة PNG أو JPEG أو WebP.",
+          "too-large": "اختر صورة أصغر من 20 ميغابايت.",
+          saveFailed: "تعذر حفظ صورة الخلفية.",
+          removeFailed: "تعذرت إزالة صورة الخلفية.",
+        },
+      },
       theme: {
         title: "سمة",
         accessibilityLabel: "الموضوع:{{value}}",

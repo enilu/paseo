@@ -218,6 +218,16 @@ export const ja: TranslationResources = {
     },
   },
   agentPanel: {
+    share: {
+      action: "読み取り専用スナップショットを共有",
+      title: "このセッションを共有しますか？",
+      warning:
+        "スナップショットにはプロンプト、推論、ツール出力が含まれます。リンクを知っている人は7日間閲覧できます。",
+      confirm: "共有リンクを作成",
+      creating: "暗号化スナップショットを作成中…",
+      copied: "共有リンクをコピーしました",
+      failed: "共有リンクを作成できませんでした。もう一度お試しください。",
+    },
     states: {
       notFound: "エージェントが見つかりません",
       failedToLoad: "エージェントの読み込みに失敗しました",
@@ -402,6 +412,13 @@ export const ja: TranslationResources = {
     },
   },
   workspace: {
+    access: {
+      description: "Enter the access code to view or continue this workspace.",
+      placeholder: "Access code",
+      unlock: "Unlock",
+      unlocking: "Unlocking...",
+      incorrectCode: "Incorrect access code",
+    },
     route: {
       loading: "ワークスペースを読み込み中",
       connecting: "接続中",
@@ -1240,6 +1257,12 @@ export const ja: TranslationResources = {
       createWorktreeFailed: "ワークツリーの作成に失敗しました",
       composerStateRequired: "コンポーザーの状態が必要です",
       selectModel: "モデルを選択してください",
+      accessCodeRequired: "Enter an access code",
+    },
+    accessCode: {
+      label: "Protect this workspace",
+      hint: "Others can see its title, but need the access code to open it.",
+      placeholder: "Access code",
     },
     tooltips: {
       project: "Choose the project",
@@ -1636,6 +1659,7 @@ export const ja: TranslationResources = {
         hostRequired: "ホストは必須です",
         invalidPort: "ポートは1から65535の間である必要があります",
         invalidConnection: "無効な接続",
+        passwordRequired: "daemon のパスワードを入力してください",
         failedTitle: "接続に失敗しました",
         failedToConnect: "{{endpoint}}への接続に失敗しました。",
         noAdditionalDetails: "{{detail}}（追加の詳細は提供されていません）",
@@ -1935,8 +1959,10 @@ export const ja: TranslationResources = {
       notifications: "通知",
       permissions: "権限",
       diagnostics: "診断",
+      releaseNotes: en.settings.sections.releaseNotes,
       about: "アプリ情報",
     },
+    releaseNotes: en.settings.releaseNotes,
     layout: en.settings.layout,
     editor: {
       title: "エディター",
@@ -2113,6 +2139,27 @@ export const ja: TranslationResources = {
       },
     },
     appearance: {
+      background: {
+        title: "カスタム背景",
+        configured: "背景画像が有効です",
+        notConfigured: "背景画像が設定されていません",
+        description:
+          "20 MB以下のPNG、JPEG、WebPに対応しています。画像はこの端末内にのみ保存されます。",
+        choose: "画像を選択",
+        replace: "画像を変更",
+        remove: "削除",
+        opacity: "背景の不透明度",
+        opacityHint: "インターフェースの背後に表示する画像の強さ（20～100%）",
+        blur: "背景のぼかし",
+        blurHint: "インターフェースの背後にある画像をぼかします（0～20 px）",
+        errorTitle: "カスタム背景",
+        errors: {
+          "unsupported-type": "PNG、JPEG、WebP画像を選択してください。",
+          "too-large": "20 MB未満の画像を選択してください。",
+          saveFailed: "背景画像を保存できませんでした。",
+          removeFailed: "背景画像を削除できませんでした。",
+        },
+      },
       theme: {
         title: "テーマ",
         accessibilityLabel: "テーマ: {{value}}",

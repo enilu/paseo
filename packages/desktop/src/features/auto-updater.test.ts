@@ -37,6 +37,7 @@ vi.mock("electron-updater", () => ({
 }));
 
 import {
+  areAppUpdatesDisabledForThisBuild,
   bucketFromStagingUserId,
   checkForAppUpdate,
   createAppUpdateLifecycleLogger,
@@ -47,6 +48,38 @@ import {
 } from "./auto-updater";
 
 describe("checkForAppUpdate", () => {
+  it("skips the updater when app updates are disabled for the build", async () => {
+    const previous = process.env.PASEO_DISABLE_APP_UPDATES;
+    process.env.PASEO_DISABLE_APP_UPDATES = "1";
+
+    try {
+      expect(areAppUpdatesDisabledForThisBuild()).toBe(true);
+
+      const result = await checkForAppUpdate({
+        currentVersion: "1.2.3",
+        releaseChannel: "stable",
+        intent: "automatic",
+      });
+
+      expect(result).toEqual({
+        hasUpdate: false,
+        readyToInstall: false,
+        currentVersion: "1.2.3",
+        latestVersion: "1.2.3",
+        body: null,
+        date: null,
+        errorMessage: null,
+      });
+      expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) {
+        delete process.env.PASEO_DISABLE_APP_UPDATES;
+      } else {
+        process.env.PASEO_DISABLE_APP_UPDATES = previous;
+      }
+    }
+  });
+
   it("treats an unpublished channel manifest as an unavailable update", async () => {
     const error = Object.assign(new Error("Cannot find latest-mac.yml"), {
       code: "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND",

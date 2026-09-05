@@ -39,6 +39,7 @@ import {
   Sparkles,
   Blocks,
   PanelsTopLeft,
+  ScrollText,
 } from "lucide-react-native";
 import { DropdownTrigger } from "@/components/ui/dropdown-trigger";
 import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
@@ -114,6 +115,7 @@ import {
 } from "@/screens/settings/host-page";
 import { HostPluginsPage } from "@/screens/settings/plugins-page";
 import { MetadataGenerationPage } from "@/screens/settings/metadata-generation-page";
+import { ReleaseNotesPage } from "@/screens/settings/release-notes-page";
 import ProjectsScreen from "@/screens/projects-screen";
 import ProjectSettingsScreen from "@/screens/project-settings-screen";
 import { SETTINGS_DESKTOP_SIDEBAR_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
@@ -174,6 +176,7 @@ const SIDEBAR_SECTION_ITEMS: SidebarSectionItem[] = [
     desktopOnly: true,
   },
   { id: "diagnostics", labelKey: "settings.sections.diagnostics", icon: Stethoscope },
+  { id: "release-notes", labelKey: "settings.sections.releaseNotes", icon: ScrollText },
   { id: "about", labelKey: "settings.sections.about", icon: Info },
 ];
 
@@ -1503,6 +1506,8 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
                 handlePlaybackTest={handlePlaybackTest}
               />
             );
+          case "release-notes":
+            return <ReleaseNotesPage />;
           case "about":
             return (
               <AboutSection
