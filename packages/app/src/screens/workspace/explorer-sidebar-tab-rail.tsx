@@ -17,7 +17,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { titlebarDragSurfaceStyle } from "@/components/desktop/titlebar-drag-region";
+import {
+  titlebarDragSurfaceStyle,
+  titlebarNoDragSurfaceStyle,
+} from "@/components/desktop/titlebar-drag-region";
 import { WORKSPACE_SECONDARY_HEADER_HEIGHT } from "@/constants/layout";
 import { iconButtonChromeGlyphSize } from "@/components/ui/icon-button-chrome";
 import { HEADER_CONTROL_HEIGHT } from "@/components/ui/control-geometry";
@@ -132,6 +135,7 @@ function ExplorerSidebarTab({
                 hovered ? styles.tabHovered : null,
                 item.isActive ? styles.tabActive : null,
                 isDragging ? styles.tabDragging : null,
+                titlebarNoDragSurfaceStyle as never,
               ]}
             >
               <WorkspaceTabIcon
@@ -370,7 +374,9 @@ export function ExplorerSidebarTabRail({
           />
         </View>
         {trailingAccessory ? (
-          <View style={styles.trailingAccessory}>{trailingAccessory}</View>
+          <View style={[styles.trailingAccessory, titlebarNoDragSurfaceStyle as never]}>
+            {trailingAccessory}
+          </View>
         ) : null}
       </ContextMenuTrigger>
       <ContextMenuContent align="start" minWidth={200} testID="explorer-sidebar-tab-configuration">
