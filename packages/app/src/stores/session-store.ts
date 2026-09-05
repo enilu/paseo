@@ -106,6 +106,8 @@ export interface Agent {
 
 export interface WorkspaceDescriptor {
   id: string;
+  createdAt?: Date;
+  activityAt?: Date | null;
   projectId: string;
   projectDisplayName: string;
   projectCustomName?: string | null;
@@ -141,6 +143,8 @@ export function normalizeWorkspaceDescriptor(
       : null;
   return {
     id: normalizeWorkspaceOpaqueId(payload.id) ?? payload.id,
+    createdAt: payload.createdAt ? new Date(payload.createdAt) : undefined,
+    activityAt: normalizeOptionalDate(payload.activityAt),
     projectId: payload.projectId,
     projectDisplayName: payload.projectDisplayName,
     projectCustomName: payload.projectCustomName ?? null,
@@ -169,6 +173,12 @@ export function normalizeWorkspaceDescriptor(
     forge: payload.forge,
     project: payload.project,
   };
+}
+
+function normalizeOptionalDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export interface ProjectDescriptor {

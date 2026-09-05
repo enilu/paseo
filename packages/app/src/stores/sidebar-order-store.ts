@@ -82,7 +82,10 @@ function normalizeLegacyWorkspaceKey(serverId: string, rawWorkspaceKey: string):
   return workspaceKey.startsWith(serverPrefix) ? workspaceKey : `${serverPrefix}${workspaceKey}`;
 }
 
-export function migrateSidebarOrderState(persistedState: unknown): {
+export function migrateSidebarOrderState(
+  persistedState: unknown,
+  version = 1,
+): {
   projectOrder: string[];
   pinnedWorkspaceOrder: string[];
   workspaceOrderByProject: Record<string, string[]>;
@@ -103,20 +106,26 @@ export function migrateSidebarOrderState(persistedState: unknown): {
     }
   }
 
-  const workspaceOrderByProject = normalizeWorkspaceOrderByProject(state.workspaceOrderByProject);
-  for (const [scopeKey, order] of Object.entries(state.workspaceOrderByServerAndProject ?? {})) {
-    const scope = extractWorkspaceOrderScope(scopeKey);
-    if (!scope) continue;
-    const existing = workspaceOrderByProject[scope.projectViewKey] ?? [];
-    const merged = [...existing];
-    const seen = new Set(merged);
-    for (const key of order) {
-      const workspaceKey = normalizeLegacyWorkspaceKey(scope.serverId, key);
-      if (!workspaceKey || seen.has(workspaceKey)) continue;
-      seen.add(workspaceKey);
-      merged.push(workspaceKey);
+  const workspaceOrderByProject: Record<string, string[]> = {};
+  if (version >= 2) {
+    Object.assign(
+      workspaceOrderByProject,
+      normalizeWorkspaceOrderByProject(state.workspaceOrderByProject),
+    );
+    for (const [scopeKey, order] of Object.entries(state.workspaceOrderByServerAndProject ?? {})) {
+      const scope = extractWorkspaceOrderScope(scopeKey);
+      if (!scope) continue;
+      const existing = workspaceOrderByProject[scope.projectViewKey] ?? [];
+      const merged = [...existing];
+      const seen = new Set(merged);
+      for (const key of order) {
+        const workspaceKey = normalizeLegacyWorkspaceKey(scope.serverId, key);
+        if (!workspaceKey || seen.has(workspaceKey)) continue;
+        seen.add(workspaceKey);
+        merged.push(workspaceKey);
+      }
+      workspaceOrderByProject[scope.projectViewKey] = merged;
     }
-    workspaceOrderByProject[scope.projectViewKey] = merged;
   }
 
   return {
@@ -167,7 +176,7 @@ export const useSidebarOrderStore = create<SidebarOrderStoreState>()(
         pinnedWorkspaceOrder: state.pinnedWorkspaceOrder,
         workspaceOrderByProject: state.workspaceOrderByProject,
       }),
-      version: 1,
+      version: 2,
       migrate: migrateSidebarOrderState,
     },
   ),

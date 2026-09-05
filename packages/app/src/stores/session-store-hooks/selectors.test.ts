@@ -37,6 +37,8 @@ function createWorkspace(
 ): WorkspaceDescriptor {
   return {
     id: input.id,
+    createdAt: input.createdAt,
+    activityAt: input.activityAt,
     projectId: input.projectId ?? "project-1",
     projectDisplayName: input.projectDisplayName ?? "Project 1",
     projectRootPath: input.projectRootPath ?? "/repo",
@@ -431,6 +433,52 @@ describe("workspace structure composition", () => {
     expect(tracked.current).toBe(afterAdd);
 
     tracked.stop();
+  });
+
+  it("orders project workspaces by newest activity time before creation time and title", () => {
+    initializeWorkspaces([
+      createWorkspace({
+        id: "workspace-newer-title",
+        name: "0901 newer title",
+        createdAt: new Date("2026-09-02T00:00:00.000Z"),
+        activityAt: new Date("2026-09-01T00:00:00.000Z"),
+      }),
+      createWorkspace({
+        id: "workspace-newer-activity",
+        name: "0831 older title",
+        createdAt: new Date("2026-09-01T00:00:00.000Z"),
+        activityAt: new Date("2026-09-02T00:00:00.000Z"),
+      }),
+    ]);
+
+    const projects = selectWorkspaceStructureProjects(useSessionStore.getState(), [SERVER_ID]);
+
+    expect(projects[0]?.workspaceKeys).toEqual([
+      `${SERVER_ID}:workspace-newer-activity`,
+      `${SERVER_ID}:workspace-newer-title`,
+    ]);
+  });
+
+  it("falls back to creation time when project workspaces have no activity time", () => {
+    initializeWorkspaces([
+      createWorkspace({
+        id: "workspace-older",
+        name: "0901 newer title",
+        createdAt: new Date("2026-09-01T00:00:00.000Z"),
+      }),
+      createWorkspace({
+        id: "workspace-newer",
+        name: "0831 older title",
+        createdAt: new Date("2026-09-02T00:00:00.000Z"),
+      }),
+    ]);
+
+    const projects = selectWorkspaceStructureProjects(useSessionStore.getState(), [SERVER_ID]);
+
+    expect(projects[0]?.workspaceKeys).toEqual([
+      `${SERVER_ID}:workspace-newer`,
+      `${SERVER_ID}:workspace-older`,
+    ]);
   });
 
   it("renders a project parent with zero active workspaces", () => {

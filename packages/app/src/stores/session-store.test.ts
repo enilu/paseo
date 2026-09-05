@@ -444,6 +444,28 @@ describe("normalizeWorkspaceDescriptor", () => {
       },
     ]);
     expect(workspace.scripts).not.toBe(scripts);
+    expect(workspace.activityAt).toBeNull();
+  });
+
+  it("normalizes workspace activity timestamps", () => {
+    const workspace = normalizeWorkspaceDescriptor({
+      id: "1",
+      projectId: "1",
+      projectDisplayName: "Project 1",
+      projectRootPath: "/repo",
+      workspaceDirectory: "/repo",
+      projectKind: "git",
+      workspaceKind: "checkout",
+      name: "main",
+      archivingAt: null,
+      status: "done",
+      statusEnteredAt: null,
+      activityAt: "2026-09-02T00:00:00.000Z",
+      diffStat: null,
+      scripts: [],
+    });
+
+    expect(workspace.activityAt).toEqual(new Date("2026-09-02T00:00:00.000Z"));
   });
 
   it("canonicalizes the workspace directory and treats a blank one as empty", () => {

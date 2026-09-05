@@ -3806,6 +3806,9 @@ export const WorkspaceDescriptorPayloadSchema = z
     // COMPAT(workspaces): keep legacy directory workspace kind parseable.
     workspaceKind: z.enum(["directory", "local_checkout", "checkout", "worktree"]),
     name: z.string(),
+    // COMPAT(workspaceCreatedAt): added in v0.7.0-jiaxing, remove optional after
+    // the supported daemon floor always emits creation timestamps.
+    createdAt: z.string().optional(),
     // COMPAT(workspaceTitles): added in v0.1.97, drop the optional gate when floor >= v0.1.97.
     // When the user has titled a workspace, `name` carries the resolved value
     // (title) and `title` mirrors the raw override so the rename UI can prefill

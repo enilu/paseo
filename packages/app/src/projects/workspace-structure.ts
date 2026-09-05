@@ -39,7 +39,13 @@ interface ProjectDraft {
   projectKind: WorkspaceDescriptor["projectKind"];
   iconWorkingDir: string;
   hosts: Map<string, WorkspaceStructureHostPlacement>;
-  workspaces: Array<{ workspaceId: string; workspaceName: string; workspaceKey: string }>;
+  workspaces: Array<{
+    workspaceId: string;
+    workspaceName: string;
+    workspaceKey: string;
+    activityAt?: Date | null;
+    createdAt?: Date;
+  }>;
 }
 
 /** The single app boundary that turns host-local projects into grouped display projects. */
@@ -88,6 +94,8 @@ export function buildWorkspaceStructureProjects(input: {
         workspaceId: workspace.id,
         workspaceName: workspace.name,
         workspaceKey: `${session.serverId}:${workspace.id}`,
+        activityAt: workspace.activityAt,
+        createdAt: workspace.createdAt,
       });
     }
   }
@@ -199,13 +207,50 @@ function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
 }
 
 function compareWorkspaceStructureItems(
-  left: { workspaceId: string; workspaceName: string },
-  right: { workspaceId: string; workspaceName: string },
+  left: {
+    workspaceId: string;
+    workspaceName: string;
+    activityAt?: Date | null;
+    createdAt?: Date;
+  },
+  right: {
+    workspaceId: string;
+    workspaceName: string;
+    activityAt?: Date | null;
+    createdAt?: Date;
+  },
 ): number {
+  const activityAtOrder = compareDatesDesc(left.activityAt, right.activityAt);
+  if (activityAtOrder !== 0) return activityAtOrder;
+
+  const createdAtOrder = compareDatesDesc(left.createdAt, right.createdAt);
+  if (createdAtOrder !== 0) return createdAtOrder;
+
   return (
     left.workspaceName.localeCompare(right.workspaceName, undefined, {
       numeric: true,
       sensitivity: "base",
     }) || left.workspaceId.localeCompare(right.workspaceId, undefined, { sensitivity: "base" })
   );
+}
+
+function compareDatesDesc(left: Date | null | undefined, right: Date | null | undefined): number {
+  const leftTime = getSortableDateTime(left);
+  const rightTime = getSortableDateTime(right);
+  if (typeof leftTime === "number" && typeof rightTime === "number") {
+    const dateOrder = rightTime - leftTime;
+    if (dateOrder !== 0) return dateOrder;
+  } else if (typeof leftTime === "number") {
+    return -1;
+  } else if (typeof rightTime === "number") {
+    return 1;
+  }
+
+  return 0;
+}
+
+function getSortableDateTime(date: Date | null | undefined): number | null {
+  if (!date) return null;
+  const time = date.getTime();
+  return Number.isNaN(time) ? null : time;
 }
