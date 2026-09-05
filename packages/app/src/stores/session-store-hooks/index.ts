@@ -9,6 +9,7 @@ import {
   selectWorkspaceDirectoryServerIds,
   selectHasWorkspaces,
   selectProjectOrder,
+  selectProject,
   selectRecommendedProjectPaths,
   selectWorkspace,
   selectWorkspaceDirectory,
@@ -20,7 +21,11 @@ import {
   workspaceEqualityFns,
   type WorkspaceStructure,
 } from "./selectors";
-import { useSessionStore, type WorkspaceDescriptor } from "../session-store";
+import {
+  useSessionStore,
+  type ProjectDescriptor,
+  type WorkspaceDescriptor,
+} from "../session-store";
 import type { DesktopBadgeWorkspaceStatus } from "@/utils/desktop-badge-state";
 
 // These are the ONLY supported ways to read workspaces from the session store.
@@ -40,6 +45,17 @@ export function useWorkspace(
   return useStoreWithEqualityFn(
     useSessionStore,
     (state) => selectWorkspace(state, serverId, workspaceId),
+    workspaceEqualityFns.identity,
+  );
+}
+
+export function useProject(
+  serverId: string | null,
+  projectId: string | null,
+): ProjectDescriptor | null {
+  return useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => selectProject(state, serverId, projectId),
     workspaceEqualityFns.identity,
   );
 }
