@@ -72,7 +72,12 @@ function createToast(): ToastApi {
   };
 }
 
-function createWrapper(input: { client: TestClient; openedFiles: OpenedFile[]; toast?: ToastApi }) {
+function createWrapper(input: {
+  client: TestClient;
+  openedFiles: OpenedFile[];
+  downloadedFiles?: InlinePathTarget[];
+  toast?: ToastApi;
+}) {
   const queryClient = createQueryClient();
   return function Wrapper({ children }: { children: ReactNode }) {
     const openWorkspaceFile = useCallback(
@@ -81,6 +86,9 @@ function createWrapper(input: { client: TestClient; openedFiles: OpenedFile[]; t
       },
       [],
     );
+    const downloadWorkspaceFile = useCallback((target: InlinePathTarget) => {
+      input.downloadedFiles?.push(target);
+    }, []);
 
     return (
       <QueryClientProvider client={queryClient}>
@@ -89,6 +97,7 @@ function createWrapper(input: { client: TestClient; openedFiles: OpenedFile[]; t
           serverId="server-1"
           workspaceRoot="/Users/test/project"
           onOpenWorkspaceFile={openWorkspaceFile}
+          onDownloadWorkspaceFile={input.downloadedFiles ? downloadWorkspaceFile : undefined}
           toast={input.toast}
         >
           {children}
@@ -269,6 +278,32 @@ describe("useFileLink", () => {
       expect(openedFiles).toHaveLength(1);
     });
     expect(getDirectorySuggestions).toHaveBeenCalledTimes(1);
+  });
+
+  it("downloads an assistant file link without opening the preview", async () => {
+    const getDirectorySuggestions = vi.fn(async () =>
+      resolvedSuggestions([{ path: "docs/dumm.md", kind: "file" }]),
+    );
+    const openedFiles: OpenedFile[] = [];
+    const downloadedFiles: InlinePathTarget[] = [];
+    const { result } = renderHook(() => useFileLink(SOURCE), {
+      wrapper: createWrapper({
+        client: { getDirectorySuggestions },
+        openedFiles,
+        downloadedFiles,
+      }),
+    });
+
+    act(() => {
+      result.current.onPress();
+    });
+
+    await waitFor(() => {
+      expect(downloadedFiles).toEqual([
+        { raw: "http://dumm.md", path: "/Users/test/project/docs/dumm.md" },
+      ]);
+    });
+    expect(openedFiles).toEqual([]);
   });
 
   it("does not open a stale result after the workspace changes", async () => {

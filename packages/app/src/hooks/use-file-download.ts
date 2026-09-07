@@ -1,7 +1,8 @@
 import { useCallback, useMemo } from "react";
-import { useHosts } from "@/runtime/host-runtime";
+import { useHosts, useHostRuntimeClient, useHostRuntimeSnapshot } from "@/runtime/host-runtime";
 import { useDownloadStore } from "@/stores/download-store";
 import { useFileExplorerActions } from "@/hooks/use-file-explorer-actions";
+import { i18n } from "@/i18n/i18next";
 
 interface UseFileDownloadParams {
   serverId: string;
@@ -12,8 +13,9 @@ interface UseFileDownloadParams {
 /**
  * Returns a stable callback that downloads a single workspace file by its
  * workspace-relative path. Shared by the file explorer tree and the git diff
- * pane so both surfaces download through the same host token + download-store
- * pipeline instead of duplicating the plumbing.
+ * pane and assistant messages so every surface uses the same download store.
+ * Direct TCP connections use short-lived HTTP tokens; tunneled and relay
+ * connections use the authenticated WebSocket file channel.
  */
 export function useFileDownload({
   serverId,
@@ -21,6 +23,8 @@ export function useFileDownload({
   workspaceRoot,
 }: UseFileDownloadParams): (input: { fileName: string; path: string }) => void {
   const daemons = useHosts();
+  const client = useHostRuntimeClient(serverId);
+  const runtimeSnapshot = useHostRuntimeSnapshot(serverId);
   const daemonProfile = useMemo(
     () => daemons.find((daemon) => daemon.serverId === serverId),
     [daemons, serverId],
@@ -48,9 +52,25 @@ export function useFileDownload({
         fileName,
         path,
         daemonProfile,
+        activeConnection: runtimeSnapshot?.activeConnection ?? null,
         requestFileDownloadToken: (targetPath) => requestFileDownloadToken(targetPath),
+        readFile: async (targetPath) => {
+          if (!client) {
+            throw new Error(i18n.t("workspace.terminal.hostDisconnected"));
+          }
+          return client.readFile(normalizedWorkspaceRoot, targetPath);
+        },
       });
     },
-    [daemonProfile, requestFileDownloadToken, serverId, startDownload, workspaceScopeId],
+    [
+      client,
+      daemonProfile,
+      normalizedWorkspaceRoot,
+      requestFileDownloadToken,
+      runtimeSnapshot?.activeConnection,
+      serverId,
+      startDownload,
+      workspaceScopeId,
+    ],
   );
 }

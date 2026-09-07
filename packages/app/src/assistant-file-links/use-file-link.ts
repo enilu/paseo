@@ -297,6 +297,10 @@ async function dispatchFileTarget(input: {
   ) {
     return;
   }
+  if (current.onDownloadWorkspaceFile) {
+    current.onDownloadWorkspaceFile(input.target);
+    return;
+  }
   current.onOpenWorkspaceFile?.(input.target, input.disposition);
 }
 
