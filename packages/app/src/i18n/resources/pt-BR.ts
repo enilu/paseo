@@ -2068,6 +2068,7 @@ export const ptBR: TranslationResources = {
         description: "Linhas mantidas no buffer do terminal integrado",
         accessibilityLabel: "Linhas do scrollback do terminal",
       },
+      codexNativeHistory: en.settings.general.codexNativeHistory,
       autoExpandReasoning: {
         label: "Sempre expandir raciocínio",
         description:

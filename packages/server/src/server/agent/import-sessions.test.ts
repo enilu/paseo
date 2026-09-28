@@ -237,6 +237,7 @@ test("listImportableProviderSessions filters, sorts, limits, and projects import
     request: makeRequest({
       cwd,
       providers: ["codex"],
+      includeExternalCodexHistory: true,
       since: "2026-04-30T00:00:00.000Z",
       limit: 2,
     }),
@@ -358,7 +359,11 @@ test("listImportableProviderSessions requests a bounded deep scan for search res
   const listImportableSessions = vi.fn(async () => makeImportableSessionsResult(matchingSessions));
 
   const result = await listImportableProviderSessions({
-    request: makeRequest({ query: "INVOICE", limit: 10 }),
+    request: makeRequest({
+      query: "INVOICE",
+      limit: 10,
+      includeExternalCodexHistory: true,
+    }),
     agentManager: { listAgents: () => [], listImportableSessions },
     agentStorage: { list: async () => [] },
     providerSnapshotManager: { getProviderLabel: (provider) => provider },
@@ -413,6 +418,52 @@ test("listImportableProviderSessions includes a provider session after its Paseo
 
   expect(result.entries.map((entry) => entry.providerHandleId)).toEqual(["archived-session"]);
   expect(result.filteredAlreadyImportedCount).toBe(0);
+});
+
+test("listImportableProviderSessions hides unknown Codex history when external history is disabled", async () => {
+  const cwd = "/tmp/project";
+  const sessions = [
+    makeImportableSession({
+      provider: "codex",
+      sessionId: "external-session",
+      nativeHandle: "external-session",
+      cwd,
+      title: "External",
+      lastActivityAt: "2026-04-30T12:00:00.000Z",
+    }),
+    makeImportableSession({
+      provider: "codex",
+      sessionId: "archived-paseo-session",
+      nativeHandle: "archived-paseo-session",
+      cwd,
+      title: "Archived Paseo",
+      lastActivityAt: "2026-04-30T11:00:00.000Z",
+    }),
+  ];
+
+  const result = await listImportableProviderSessions({
+    request: makeRequest({ cwd, providers: ["codex"], includeExternalCodexHistory: false }),
+    agentManager: {
+      listAgents: () => [],
+      listImportableSessions: async () => makeImportableSessionsResult(sessions),
+    } satisfies Pick<AgentManager, "listAgents" | "listImportableSessions">,
+    agentStorage: {
+      list: async () => [
+        {
+          provider: "codex",
+          archivedAt: "2026-04-30T12:00:00.000Z",
+          persistence: {
+            provider: "codex",
+            sessionId: "archived-paseo-session",
+            nativeHandle: "archived-paseo-session",
+          },
+        } as StoredAgentRecord,
+      ],
+    } satisfies Pick<AgentStorage, "list">,
+    providerSnapshotManager: { getProviderLabel: () => "Codex" },
+  });
+
+  expect(result.entries.map((entry) => entry.providerHandleId)).toEqual(["archived-paseo-session"]);
 });
 
 test("listImportableProviderSessions includes an archived provider session still loaded in memory", async () => {
@@ -483,7 +534,7 @@ test("listImportableProviderSessions filters out metadata generation sessions", 
   ];
 
   const result = await listImportableProviderSessions({
-    request: makeRequest({ cwd, providers: ["codex"] }),
+    request: makeRequest({ cwd, providers: ["codex"], includeExternalCodexHistory: true }),
     agentManager: {
       listAgents: () => [],
       listImportableSessions: async () => makeImportableSessionsResult(sessions),

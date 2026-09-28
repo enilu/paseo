@@ -2137,6 +2137,11 @@ export const en = {
         description: "Lines kept in the built-in terminal buffer",
         accessibilityLabel: "Terminal scrollback lines",
       },
+      codexNativeHistory: {
+        label: "Show Codex native history",
+        description: "Include Codex App and codex-web sessions in Import session",
+        accessibilityLabel: "Show Codex native history",
+      },
       autoExpandReasoning: {
         label: "Always expand reasoning",
         description: "Show agent thinking and chain-of-thought blocks fully expanded by default",

@@ -2084,6 +2084,7 @@ export const es: TranslationResources = {
         description: "Líneas mantenidas en el búfer de terminal incorporado",
         accessibilityLabel: "Líneas del historial de terminal",
       },
+      codexNativeHistory: en.settings.general.codexNativeHistory,
       autoExpandReasoning: {
         label: "Siempre expandir razonamiento",
         description:

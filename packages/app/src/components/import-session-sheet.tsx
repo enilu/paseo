@@ -20,6 +20,7 @@ import { useProvidersSnapshot } from "@/hooks/use-providers-snapshot";
 import { useHostProjects } from "@/projects/host-projects";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHosts } from "@/runtime/host-runtime";
+import { useSettings } from "@/hooks/use-settings";
 import { i18n } from "@/i18n/i18next";
 import {
   aggregateSessionEntries,
@@ -106,9 +107,19 @@ function buildSessionsQueriesConfig(args: {
   cwd: string | null;
   query: string;
   limit: number;
+  includeExternalCodexHistory: boolean;
   hostDisconnectedMessage?: string;
 }): SessionsQueryConfig[] {
-  const { providersToFetch, visible, client, cwd, query, limit, hostDisconnectedMessage } = args;
+  const {
+    providersToFetch,
+    visible,
+    client,
+    cwd,
+    query,
+    limit,
+    includeExternalCodexHistory,
+    hostDisconnectedMessage,
+  } = args;
   if (providersToFetch === null) return [];
   const enabled = visible && Boolean(client);
   return providersToFetch.map((provider) => ({
@@ -125,6 +136,7 @@ function buildSessionsQueriesConfig(args: {
         providers: [provider],
         limit,
         ...(query ? { query } : {}),
+        includeExternalCodexHistory,
       });
     },
   }));
@@ -408,6 +420,7 @@ export function ImportSessionSheet({
   onImported,
 }: ImportSessionSheetProps) {
   const { t } = useTranslation();
+  const codexNativeHistoryEnabled = useSettings((settings) => settings.codexNativeHistoryEnabled);
   const queryClient = useQueryClient();
   const { theme } = useUnistyles();
 
@@ -467,9 +480,10 @@ export function ImportSessionSheet({
         cwd: scopeCwd,
         query,
         limit: pageLimit,
+        includeExternalCodexHistory: codexNativeHistoryEnabled,
         hostDisconnectedMessage: t("workspace.terminal.hostDisconnected"),
       }),
-    [providersToFetch, visible, client, scopeCwd, query, pageLimit, t],
+    [providersToFetch, visible, client, scopeCwd, query, pageLimit, t, codexNativeHistoryEnabled],
   );
 
   const queries = useQueries({ queries: queriesConfig });

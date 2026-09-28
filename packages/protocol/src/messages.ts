@@ -1394,6 +1394,7 @@ export const FetchRecentProviderSessionsRequestMessageSchema = z.object({
   since: z.string().optional(),
   limit: z.number().int().positive().max(200).optional(),
   query: z.string().optional(),
+  includeExternalCodexHistory: z.boolean().optional(),
 });
 
 export const FetchAgentRequestMessageSchema = z.object({

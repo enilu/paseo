@@ -285,6 +285,7 @@ interface GeneralSectionProps {
   handleServiceUrlBehaviorChange: (behavior: ServiceUrlBehavior) => void;
   handleLanguageChange: (language: AppLanguage) => void;
   handleTerminalScrollbackLinesChange: (lines: number) => void;
+  handleCodexNativeHistoryEnabledChange: (enabled: boolean) => void;
 }
 
 interface ServiceUrlBehaviorMenuItemProps {
@@ -359,6 +360,7 @@ function GeneralSection({
   handleServiceUrlBehaviorChange,
   handleLanguageChange,
   handleTerminalScrollbackLinesChange,
+  handleCodexNativeHistoryEnabledChange,
 }: GeneralSectionProps) {
   const { t, i18n } = useTranslation();
   const activeLocale = getActiveLocale(i18n.language);
@@ -504,6 +506,22 @@ function GeneralSection({
             selectTextOnFocus
             style={styles.terminalScrollbackInput}
             accessibilityLabel={t("settings.general.terminalScrollback.accessibilityLabel")}
+          />
+        </View>
+        <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+          <View style={settingsStyles.rowContent}>
+            <Text style={settingsStyles.rowTitle}>
+              {t("settings.general.codexNativeHistory.label")}
+            </Text>
+            <Text style={settingsStyles.rowHint}>
+              {t("settings.general.codexNativeHistory.description")}
+            </Text>
+          </View>
+          <Switch
+            value={settings.codexNativeHistoryEnabled}
+            onValueChange={handleCodexNativeHistoryEnabledChange}
+            accessibilityLabel={t("settings.general.codexNativeHistory.accessibilityLabel")}
+            testID="settings-codex-native-history-switch"
           />
         </View>
       </View>
@@ -1259,6 +1277,13 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
     [updateSettings],
   );
 
+  const handleCodexNativeHistoryEnabledChange = useCallback(
+    (codexNativeHistoryEnabled: boolean) => {
+      void updateSettings({ codexNativeHistoryEnabled });
+    },
+    [updateSettings],
+  );
+
   const handleUseLegacyTerminalRendererChange = useCallback(
     (useLegacyTerminalRenderer: boolean) => {
       void updateSettings({ useLegacyTerminalRenderer });
@@ -1479,6 +1504,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
                   handleServiceUrlBehaviorChange={handleServiceUrlBehaviorChange}
                   handleLanguageChange={handleLanguageChange}
                   handleTerminalScrollbackLinesChange={handleTerminalScrollbackLinesChange}
+                  handleCodexNativeHistoryEnabledChange={handleCodexNativeHistoryEnabledChange}
                 />
                 {isDesktopApp ? <BrowserDataSection /> : null}
               </>

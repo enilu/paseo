@@ -129,6 +129,7 @@ export async function listImportableProviderSessions(
     providerFilter,
   );
   const importedHandles = importedSessions.handles;
+  const knownPaseoHandles = importedSessions.knownHandles;
   const query = normalizeImportSessionQuery(request.query);
   const listingLimit = query ? IMPORT_SESSION_SEARCH_SCAN_LIMIT : limit + importedSessions.count;
 
@@ -143,6 +144,17 @@ export async function listImportableProviderSessions(
   const candidates: ManagedImportableProviderSession[] = [];
   const matchesRequestCwd = request.cwd ? createRealpathAwarePathMatcher(request.cwd) : null;
   for (const session of listing.sessions) {
+    // New clients explicitly opt out of external Codex history. Paseo-managed
+    // sessions are removed by `importedHandles` below; omitted fields preserve
+    // legacy client behavior during the protocol rollout.
+    const sessionHandleKey = toProviderSessionHandleKey(session.provider, session.providerHandleId);
+    if (
+      session.provider === "codex" &&
+      request.includeExternalCodexHistory === false &&
+      !knownPaseoHandles.has(sessionHandleKey)
+    ) {
+      continue;
+    }
     if (matchesRequestCwd && !matchesRequestCwd(session.cwd)) {
       continue;
     }
@@ -344,8 +356,9 @@ async function collectImportedProviderSessions(
   agentManager: Pick<AgentManager, "listAgents">,
   agentStorage: Pick<AgentStorage, "list">,
   providerFilter: Set<string> | undefined,
-): Promise<{ handles: Set<string>; count: number }> {
+): Promise<{ handles: Set<string>; knownHandles: Set<string>; count: number }> {
   const handles = new Set<string>();
+  const knownHandles = new Set<string>();
   const sessions = new Set<string>();
   const records = await agentStorage.list();
   const storedRecordsById = new Map(records.map((record) => [record.id, record]));
@@ -353,27 +366,31 @@ async function collectImportedProviderSessions(
   const collect = (
     provider: AgentProvider | StoredAgentRecord["provider"] | string,
     persistence: AgentPersistenceHandle | null | undefined,
+    target: Set<string>,
   ) => {
     if (!persistence || (providerFilter && !providerFilter.has(provider))) return;
     sessions.add(toProviderSessionHandleKey(provider, persistence.sessionId));
-    collectProviderSessionHandleKeys(handles, provider, persistence);
+    collectProviderSessionHandleKeys(target, provider, persistence);
   };
 
   for (const agent of agentManager.listAgents()) {
     if (storedRecordsById.get(agent.id)?.archivedAt) {
       continue;
     }
-    collect(agent.provider, agent.persistence);
+    collect(agent.provider, agent.persistence, handles);
+    collectProviderSessionHandleKeys(knownHandles, agent.provider, agent.persistence);
   }
 
   for (const record of records) {
     if (record.archivedAt) {
-      continue;
+      collectProviderSessionHandleKeys(knownHandles, record.provider, record.persistence);
+    } else {
+      collect(record.provider, record.persistence, handles);
+      collectProviderSessionHandleKeys(knownHandles, record.provider, record.persistence);
     }
-    collect(record.provider, record.persistence);
   }
 
-  return { handles, count: sessions.size };
+  return { handles, knownHandles, count: sessions.size };
 }
 
 function toProviderSessionHandleKey(provider: string, providerHandleId: string): string {

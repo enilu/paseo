@@ -2068,6 +2068,7 @@ export const ru: TranslationResources = {
         description: "Количество строк, сохраняемых во встроенном буфере терминала",
         accessibilityLabel: "Количество строк в буфере прокрутки терминала",
       },
+      codexNativeHistory: en.settings.general.codexNativeHistory,
       autoExpandReasoning: {
         label: "Всегда разворачивать размышления",
         description:
