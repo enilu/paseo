@@ -20,6 +20,63 @@ export interface ReleaseNote {
 /** Add intentional releases at the top. Git commits never update this list automatically. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: "suzhou-2026-09-29",
+    version: "Suzhou",
+    releasedAt: "2026-09-29",
+    title: {
+      en: "Upstream 0.10.0-beta.1 foundation",
+      zhCN: "同步上游 0.10.0-beta.1",
+    },
+    summary: {
+      en: "The Suzhou release integrates upstream 0.10.0-beta.1 into the local line, with a new Codex history setting and more reliable assistant file downloads.",
+      zhCN: "Suzhou 版本将上游 0.10.0-beta.1 整合进本地分支，并新增 Codex 历史显示设置与更可靠的助手文件下载。",
+    },
+    features: [
+      {
+        title: { en: "Reorganized Settings pages", zhCN: "设置页面重组" },
+        description: {
+          en: "Settings are split into General, Sidebar, Chat, Terminal, Browser, and Open location pages.",
+          zhCN: "设置拆分为常规、侧栏、聊天、终端、浏览器和打开位置六个页面。",
+        },
+      },
+      {
+        title: { en: "OpenCode v2 support", zhCN: "支持 OpenCode v2" },
+        description: {
+          en: "OpenCode v2 is detected from the installed version and selected automatically.",
+          zhCN: "根据已安装的 opencode 版本自动识别并选用 OpenCode v2。",
+        },
+      },
+      {
+        title: { en: "Stronger daemon password protection", zhCN: "Daemon 密码保护增强" },
+        description: {
+          en: "Relay connections verify the daemon password, Add host and pairing flows accept it, and same-machine connections skip the prompt.",
+          zhCN: "Relay 连接会校验 Daemon 密码，添加 Host 与配对流程支持输入密码，同机连接不再重复询问。",
+        },
+      },
+      {
+        title: { en: "More Pi extensions", zhCN: "更多 Pi 扩展" },
+        description: {
+          en: "Pi chats gain task lists, subagent runs, and one-question ask-user dialogs from the Pi extension ecosystem.",
+          zhCN: "Pi 会话可使用任务列表、Subagent 运行和一次性提问对话等 Pi 扩展能力。",
+        },
+      },
+      {
+        title: { en: "Codex native history setting", zhCN: "Codex 原生历史显示设置" },
+        description: {
+          en: "A setting controls whether Import session includes Codex native history.",
+          zhCN: "新增设置项，控制“导入会话”是否包含 Codex 原生历史记录。",
+        },
+      },
+      {
+        title: { en: "Assistant file downloads across transports", zhCN: "跨传输方式下载助手文件" },
+        description: {
+          en: "Assistant files download correctly when the frontend and daemon use different transports.",
+          zhCN: "前端与 Daemon 使用不同传输方式时，助手文件也能正常下载。",
+        },
+      },
+    ],
+  },
+  {
     id: "huzhou-2026-09-06",
     version: "Huzhou",
     releasedAt: "2026-09-06",
