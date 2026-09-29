@@ -16,11 +16,12 @@ const { theme } = vi.hoisted(() => ({
   theme: {
     spacing: { 1: 4, 1.5: 6, 2: 8, 2.5: 10, 3: 12, 4: 16, 6: 24, 8: 32 },
     borderWidth: { 1: 1 },
-    borderRadius: { md: 6, lg: 8, full: 9999 },
+    borderRadius: { md: 6, lg: 8, full: 9999, "2xl": 16 },
     fontSize: { xs: 11, sm: 13, base: 15 },
     fontWeight: { normal: "400", medium: "500", semibold: "600" },
     iconSize: { sm: 14, md: 16, lg: 24 },
     opacity: { 50: 0.5 },
+    shadow: { md: {} },
     colors: {
       foreground: "#fff",
       foregroundMuted: "#aaa",
@@ -31,7 +32,9 @@ const { theme } = vi.hoisted(() => ({
       border: "#444",
       borderAccent: "#555",
       interactionHighlight: "rgba(255,255,255,0.08)",
-      palette: { red: { 300: "#f87171" } },
+      primary: "#3b82f6",
+      destructive: "#ef4444",
+      palette: { red: { 300: "#f87171" }, amber: { 500: "#f59e0b" }, blue: { 300: "#93c5fd" } },
     },
   },
 }));
@@ -66,13 +69,15 @@ vi.mock("@/components/provider-icons", () => ({
   getProviderIcon: () => () => null,
 }));
 
-vi.mock("lucide-react-native", () => {
+vi.mock("lucide-react-native", async (importOriginal) => {
   const icon = (name: string) => {
     const Icon = () => React.createElement("span", { "data-icon": name });
     Icon.displayName = name;
     return Icon;
   };
+  const actual = await importOriginal<typeof import("lucide-react-native")>();
   return {
+    ...actual,
     ChevronDown: icon("ChevronDown"),
     Inbox: icon("Inbox"),
     Layers: icon("Layers"),
@@ -81,6 +86,11 @@ vi.mock("lucide-react-native", () => {
     X: icon("X"),
   };
 });
+
+vi.mock("@/hooks/use-settings", () => ({
+  useSettings: <T,>(selector: (settings: { codexNativeHistoryEnabled: boolean }) => T): T =>
+    selector({ codexNativeHistoryEnabled: false }),
+}));
 
 vi.mock("@/components/ui/loading-spinner", () => ({
   LoadingSpinner: () =>
@@ -483,6 +493,7 @@ describe("ImportSessionSheet", () => {
 
     await waitFor(() => {
       expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+        includeExternalCodexHistory: false,
         cwd: "/repo/paseo",
         providers: ["claude"],
         limit: 15,
@@ -545,6 +556,7 @@ describe("ImportSessionSheet", () => {
     await screen.findByText("Cached importable session");
     await waitFor(() => {
       expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+        includeExternalCodexHistory: false,
         cwd: "/repo/paseo",
         providers: ["claude"],
         limit: 15,
@@ -689,12 +701,14 @@ describe("ImportSessionSheet", () => {
 
     await waitFor(() => {
       expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+        includeExternalCodexHistory: false,
         cwd: "/repo/paseo",
         providers: ["claude"],
         limit: 15,
       });
     });
     expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+      includeExternalCodexHistory: false,
       cwd: "/repo/paseo",
       providers: ["codex"],
       limit: 15,
@@ -703,6 +717,7 @@ describe("ImportSessionSheet", () => {
       expect.objectContaining({ providers: ["opencode"] }),
     );
     expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+      includeExternalCodexHistory: false,
       cwd: "/repo/paseo",
       providers: ["z-ai"],
       limit: 15,
@@ -885,6 +900,7 @@ describe("ImportSessionSheet", () => {
 
     await waitFor(() => {
       expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+        includeExternalCodexHistory: false,
         providers: ["claude"],
         limit: 15,
       });
@@ -1089,6 +1105,7 @@ describe("ImportSessionSheet", () => {
 
     await waitFor(() => {
       expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+        includeExternalCodexHistory: false,
         providers: ["claude"],
         limit: 15,
         query: "invoice",
@@ -1143,6 +1160,7 @@ describe("ImportSessionSheet", () => {
 
     await waitFor(() => {
       expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+        includeExternalCodexHistory: false,
         providers: ["claude"],
         limit: 45,
       });
@@ -1197,6 +1215,7 @@ describe("ImportSessionSheet", () => {
 
     await waitFor(() => {
       expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+        includeExternalCodexHistory: false,
         cwd: "/repo/paseo",
         providers: ["claude"],
         limit: 15,
@@ -1260,6 +1279,7 @@ describe("ImportSessionSheet", () => {
 
     await screen.findByText("Foreign session");
     expect(fetchRecentProviderSessions).toHaveBeenCalledWith({
+      includeExternalCodexHistory: false,
       providers: ["claude"],
       limit: 15,
     });

@@ -1,3 +1,7 @@
+import {
+  createMessageReceiptsStub,
+  createTestCreationService,
+} from "./test-utils/session-stubs.js";
 import { execSync } from "child_process";
 import { existsSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -41,6 +45,8 @@ import {
   asGitHubService,
   asWorkspaceGitService,
   asDaemonConfigStore,
+  findByType,
+  createProviderSnapshot,
   createProviderSnapshotManagerStub,
 } from "./test-utils/session-stubs.js";
 import { isPlatform } from "../test-utils/platform.js";
@@ -119,9 +125,12 @@ test("interruptAgentIfRunning rejects when graceful cancellation is refused", as
 test("cancel_agent_request reports refusal only through its response", async () => {
   const agentId = "11111111-1111-4111-8111-111111111111";
   const messages: SessionOutboundMessage[] = [];
+  const runningAgent = { id: agentId, provider: "codex", lifecycle: "running" };
   const getAgent = vi
     .fn()
-    .mockReturnValueOnce({ id: agentId, provider: "codex", lifecycle: "running" })
+    .mockReturnValueOnce(runningAgent)
+    .mockReturnValueOnce(runningAgent)
+    .mockReturnValueOnce(runningAgent)
     .mockReturnValue(null);
   const session = createSessionForTest({
     messages,
@@ -361,6 +370,8 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
   const messages = options.messages ?? [];
 
   const sessionOptions: SessionOptions = {
+    messageReceipts: createMessageReceiptsStub(),
+    creationService: createTestCreationService(),
     clientId: options.clientId ?? "test-client",
     onMessage: (message) => messages.push(message),
     ...(options.targetedMessages
@@ -368,7 +379,10 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
           onMessageToSource: (source: object, message: SessionOutboundMessage) =>
             options.targetedMessages?.push({ source, message }),
         }
-      : {}),
+      : {
+          onMessageToSource: (_source: object, message: SessionOutboundMessage) =>
+            messages.push(message),
+        }),
     onBinaryMessage: createBinaryMessageHandler(options.binaryMessages),
     logger,
     downloadTokenStore: options.downloadTokenStore ?? asDownloadTokenStore(),
@@ -378,6 +392,7 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
       listAgents: vi.fn(() => []),
       listProviderSubagentActivity: vi.fn(() => []),
       subscribe: vi.fn(() => () => {}),
+      getAgent: vi.fn(() => null),
       ...options.agentManager,
     }),
     agentStorage: asAgentStorage({
@@ -485,7 +500,11 @@ test("routes plugin requests and releases its owned catalog subscription on clea
     status: "running" as const,
   };
   const pluginRuntime: NonNullable<SessionOptions["pluginRuntime"]> = {
-    listPlugins: () => [plugin],
+    before: async (_name, request) => {
+      return request;
+    },
+    emit: () => {},
+    listPlugins: async () => [plugin],
     getLogs: () => [
       {
         sequence: 1,
@@ -509,6 +528,12 @@ test("routes plugin requests and releases its owned catalog subscription on clea
   };
   const session = createSessionForTest({ messages, pluginRuntime });
 
+  await session.handleMessage({
+    type: "session.events.set_subscription.request",
+    requestId: "catalog",
+    events: ["status.plugin_catalog_changed"],
+  });
+  messages.length = 0;
   await session.handleMessage({ type: "plugin.list.request", requestId: "list" });
   await session.handleMessage({
     type: "plugin.logs.get.request",
@@ -989,6 +1014,7 @@ describe("project command-center RPCs", () => {
             requestId: "req-create-directory",
             directoryPath,
             project: {
+              locked: false,
               projectId: "prj_created_directory",
               projectDisplayName: "new-project",
               projectCustomName: null,
@@ -1300,43 +1326,56 @@ describe("workspace file access (behavior preservation)", () => {
     const messages: SessionOutboundMessage[] = [];
     const session = createSessionForTest({ messages, paseoHome });
 
-    await session.handleMessage({
-      type: "file.upload.request",
-      fileName: "notes.txt",
-      mimeType: "text/plain",
-      size: 11,
-      modifiedAt: "2026-05-02T00:00:00.000Z",
-      requestId: "req-upload",
-    });
-    await session.handleBinaryFrame({
-      kind: "file_transfer",
-      frame: uploadFrame({
-        opcode: FileTransferOpcode.FileBegin,
+    const source = {};
+    await session.handleMessage(
+      {
+        type: "file.upload.request",
+        fileName: "notes.txt",
+        mimeType: "text/plain",
+        size: 11,
+        modifiedAt: "2026-05-02T00:00:00.000Z",
         requestId: "req-upload",
-        metadata: {
-          mime: "text/plain",
-          size: 11,
-          encoding: "binary",
-          modifiedAt: "2026-05-02T00:00:00.000Z",
-          fileName: "notes.txt",
-        },
-      }),
-    });
-    await session.handleBinaryFrame({
-      kind: "file_transfer",
-      frame: uploadFrame({
-        opcode: FileTransferOpcode.FileChunk,
-        requestId: "req-upload",
-        payload: new TextEncoder().encode("hello world"),
-      }),
-    });
-    await session.handleBinaryFrame({
-      kind: "file_transfer",
-      frame: uploadFrame({
-        opcode: FileTransferOpcode.FileEnd,
-        requestId: "req-upload",
-      }),
-    });
+      },
+      source,
+    );
+    await session.handleBinaryFrame(
+      {
+        kind: "file_transfer",
+        frame: uploadFrame({
+          opcode: FileTransferOpcode.FileBegin,
+          requestId: "req-upload",
+          metadata: {
+            mime: "text/plain",
+            size: 11,
+            encoding: "binary",
+            modifiedAt: "2026-05-02T00:00:00.000Z",
+            fileName: "notes.txt",
+          },
+        }),
+      },
+      source,
+    );
+    await session.handleBinaryFrame(
+      {
+        kind: "file_transfer",
+        frame: uploadFrame({
+          opcode: FileTransferOpcode.FileChunk,
+          requestId: "req-upload",
+          payload: new TextEncoder().encode("hello world"),
+        }),
+      },
+      source,
+    );
+    await session.handleBinaryFrame(
+      {
+        kind: "file_transfer",
+        frame: uploadFrame({
+          opcode: FileTransferOpcode.FileEnd,
+          requestId: "req-upload",
+        }),
+      },
+      source,
+    );
 
     const response = messages.find((message) => message.type === "file.upload.response");
     if (response?.type !== "file.upload.response") {
@@ -2145,13 +2184,15 @@ describe("session provider refresh cwd routing", () => {
       getSnapshot,
       warmUpSnapshotForCwd,
     } = createProviderSnapshotManagerStub();
-    getSnapshot.mockReturnValue([
-      {
-        provider: "codex",
-        status: "loading",
-        enabled: true,
-      },
-    ]);
+    getSnapshot.mockReturnValue(
+      createProviderSnapshot([
+        {
+          provider: "codex",
+          status: "loading",
+          enabled: true,
+        },
+      ]),
+    );
     const session = createSessionForTest({ messages, providerSnapshotManager });
 
     await session.handleMessage({
@@ -2176,13 +2217,15 @@ describe("session provider refresh cwd routing", () => {
     const messages: unknown[] = [];
     const { manager: providerSnapshotManager, warmUpSnapshotForCwd } =
       createProviderSnapshotManagerStub();
-    providerSnapshotManager.getSnapshot = vi.fn(() => [
-      {
-        provider: "codex",
-        status: "loading",
-        enabled: false,
-      },
-    ]);
+    providerSnapshotManager.getSnapshot = vi.fn(() =>
+      createProviderSnapshot([
+        {
+          provider: "codex",
+          status: "loading",
+          enabled: false,
+        },
+      ]),
+    );
     const session = createSessionForTest({ messages, providerSnapshotManager });
 
     await session.handleMessage({
@@ -2207,13 +2250,15 @@ describe("session provider refresh cwd routing", () => {
     const messages: unknown[] = [];
     const { manager: providerSnapshotManager, warmUpSnapshotForCwd } =
       createProviderSnapshotManagerStub();
-    providerSnapshotManager.getSnapshot = vi.fn(() => [
-      {
-        provider: "codex",
-        status: "loading",
-        enabled: false,
-      },
-    ]);
+    providerSnapshotManager.getSnapshot = vi.fn(() =>
+      createProviderSnapshot([
+        {
+          provider: "codex",
+          status: "loading",
+          enabled: false,
+        },
+      ]),
+    );
     const session = createSessionForTest({ messages, providerSnapshotManager });
 
     await session.handleMessage({
@@ -2242,23 +2287,27 @@ describe("session provider refresh cwd routing", () => {
       getSnapshot,
       warmUpSnapshotForCwd,
     } = createProviderSnapshotManagerStub();
-    getSnapshot.mockReturnValueOnce([
-      {
-        provider: "codex",
-        status: "loading",
-        enabled: true,
-      },
-    ]);
-    getSnapshot.mockReturnValue([
-      {
-        provider: "codex",
-        status: "ready",
-        enabled: true,
-        models: [{ provider: "codex", id: "gpt-5.4", label: "GPT-5.4" }],
-        modes: [],
-        fetchedAt: "2026-05-28T00:00:00.000Z",
-      },
-    ]);
+    getSnapshot.mockReturnValueOnce(
+      createProviderSnapshot([
+        {
+          provider: "codex",
+          status: "loading",
+          enabled: true,
+        },
+      ]),
+    );
+    getSnapshot.mockReturnValue(
+      createProviderSnapshot([
+        {
+          provider: "codex",
+          status: "ready",
+          enabled: true,
+          models: [{ provider: "codex", id: "gpt-5.4", label: "GPT-5.4" }],
+          modes: [],
+          fetchedAt: "2026-05-28T00:00:00.000Z",
+        },
+      ]),
+    );
     warmUpSnapshotForCwd.mockReturnValue(warmupDeferred.promise);
     const session = createSessionForTest({ messages, providerSnapshotManager });
 
@@ -2413,10 +2462,14 @@ describe("session checkout merge handling", () => {
       requestId: "request-merge-from-base-success",
     });
 
-    expect(checkoutGitMocks.mergeFromBase).toHaveBeenCalledWith("/tmp/request-worktree", {
-      baseRef: "main",
-      requireCleanTarget: true,
-    });
+    expect(checkoutGitMocks.mergeFromBase).toHaveBeenCalledWith(
+      "/tmp/request-worktree",
+      {
+        baseRef: "main",
+        requireCleanTarget: true,
+      },
+      { paseoHome: "/tmp/paseo-home", worktreesRoot: undefined },
+    );
     expect(workspaceGitService.getSnapshot).toHaveBeenCalledWith("/tmp/request-worktree", {
       force: true,
       reason: "merge-from-base",
@@ -2873,6 +2926,7 @@ diff --git a/file.txt b/file.txt
         base: "main",
       },
       expect.anything(),
+      { paseoHome: "/tmp/paseo-home", worktreesRoot: undefined },
     );
     expect(messages).toContainEqual({
       type: "checkout_pr_create_response",
@@ -2997,6 +3051,7 @@ diff --git a/file.txt b/file.txt
         base: "main",
       },
       expect.anything(),
+      { paseoHome: "/tmp/paseo-home", worktreesRoot: undefined },
     );
     expect(messages).toContainEqual({
       type: "checkout_pr_create_response",
@@ -5182,6 +5237,7 @@ test("acknowledges a timeline subscription only to its socket source", async () 
         payload: {
           agentIds: ["agent-a"],
           requestId: "timeline-subscription-targeted",
+          subscriptionId: expect.any(String),
         },
       },
     },
@@ -5412,6 +5468,7 @@ test("project.list returns every active project descriptor", async () => {
         requestId: "projects-1",
         projects: [
           {
+            locked: false,
             projectId: "project-active",
             projectKey: "remote:github.com/acme/app",
             projectDisplayName: "acme/app",
@@ -5691,4 +5748,71 @@ describe("agent config setters", () => {
       },
     });
   });
+});
+
+test("provider snapshots preserve versionless visibility while capabilities update independently", async () => {
+  const messages: SessionOutboundMessage[] = [];
+  const { manager } = createProviderSnapshotManagerStub();
+  manager.getSnapshot = () =>
+    createProviderSnapshot([
+      {
+        provider: "codex",
+        status: "ready",
+        enabled: true,
+        modes: [{ id: "default", label: "Default", icon: "Sparkles" }],
+      },
+      { provider: "plugin-provider", status: "ready", enabled: true },
+    ]);
+  const session = createSessionForTest({ messages, providerSnapshotManager: manager });
+  const source = {};
+  session.updateClientCapabilities(null, source);
+  const read = async () => {
+    messages.length = 0;
+    await session.handleMessage(
+      {
+        type: "get_providers_snapshot_request",
+        requestId: "visibility",
+      },
+      source,
+    );
+    return findByType(messages, "get_providers_snapshot_response")!.payload;
+  };
+  const versionless = await read();
+  expect(versionless.entries.map((entry) => entry.provider)).toEqual(["codex"]);
+  expect(versionless.entries[0]!.modes![0]!.icon).toBe("ShieldCheck");
+  session.updateClientCapabilities(
+    {
+      [CLIENT_CAPS.customModeIcons]: true,
+      [CLIENT_CAPS.providerSnapshotReferences]: true,
+    },
+    source,
+  );
+  const iconsOnly = await read();
+  expect(iconsOnly.entries.map((entry) => entry.provider)).toEqual(["codex"]);
+  expect(iconsOnly.entries[0]!.modes![0]!.icon).toBe("Sparkles");
+  expect(iconsOnly.snapshotHash).toBeUndefined();
+  session.updateClientCapabilities(
+    { [CLIENT_CAPS.customModeIcons]: true, [CLIENT_CAPS.providerSnapshotReferences]: true },
+    source,
+    "0.1.45",
+  );
+  expect((await read()).entries.map((entry) => entry.provider)).toEqual([
+    "codex",
+    "plugin-provider",
+  ]);
+  session.updateClientCapabilities(
+    {
+      [CLIENT_CAPS.compactProviderSnapshots]: true,
+      [CLIENT_CAPS.providerSnapshotReferences]: true,
+    },
+    source,
+    "0.1.45",
+  );
+  const references = await read();
+  expect(references.entries).toEqual([]);
+  expect(references.compactSnapshot!.entries.map((entry) => entry.provider)).toEqual([
+    "codex",
+    "plugin-provider",
+  ]);
+  expect(references.compactSnapshot!.entries[0]!.modes![0]!.icon).toBe("ShieldCheck");
 });

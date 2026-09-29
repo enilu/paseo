@@ -1,4 +1,26 @@
 export const en = {
+  paneFind: {
+    connectionFailure: "Could not search this chat. Check the host connection and retry.",
+    historyChangedFailure: "The chat changed while searching. Search again.",
+    revealFailure: "Could not show this match. Retry.",
+    searching: "Searching…",
+    loading: "Loading…",
+    failed: "Failed",
+    retry: "Retry",
+    title: "Find",
+    placeholder: "Find in pane",
+    close: "Close Find",
+    matches: "Find matches",
+    previous: "Previous match",
+    next: "Next match",
+    toggleReplace: "Toggle replace",
+    replaceWith: "Replace with",
+    replace: "Replace",
+    replaceAll: "Replace all",
+    noMatches: "No matches",
+    position: "{{current}} of {{total}}",
+    total: "{{total}} matches",
+  },
   common: {
     back: "Back",
     loading: "Loading...",
@@ -9,6 +31,7 @@ export const en = {
       copy: "Copy",
       copyLine: "Copy line",
       dismiss: "Dismiss",
+      reload: "Reload",
       retry: "Retry",
       search: "Search",
       select: "Select",
@@ -150,7 +173,7 @@ export const en = {
       initialPromptRequired: "Initial prompt is required",
       alreadyLoading: "Already loading",
       uploadFailed: "Failed to upload file",
-      noClipboardImage: "No image in clipboard",
+      noClipboardImage: "No image in the current clipboard. Try pasting from your keyboard.",
       pasteImageFailed: "Failed to paste image",
       fileTooLarge: "{{fileName}} is too large (max {{size}})",
     },
@@ -205,6 +228,10 @@ export const en = {
     historyLoadFailed: "Couldn't load agent history",
     messageCapped: "This message was capped ({{bytes}} bytes).",
     permission: {
+      rejectedPlan: "Rejected plan",
+      approvedPlan: "Approved plan",
+      canceledPlan: "Canceled plan",
+
       plan: "Plan",
       required: "Permission Required",
       deny: "Deny",
@@ -228,7 +255,8 @@ export const en = {
     states: {
       notFound: "Agent not found",
       failedToLoad: "Failed to load agent",
-      reconnecting: "Reconnecting",
+      reconnecting: "Reconnecting to host",
+      updating: "Updating messages",
       timelineSyncFailed: "Couldn't refresh agent history.",
       timelineSyncRetrying: "Retrying…",
       archivingTitle: "Archiving agent...",
@@ -905,6 +933,9 @@ export const en = {
         openChangesTab: "Open Changes tab",
         openDiffTab: "Open Diff tab",
         closeChangesTab: "Close Changes tab",
+        jumpToFile: {
+          title: "Jump to file",
+        },
         binaryFile: "Binary file",
         tooLarge: "Diff too large to display",
         previewTooLargeTitle: "This diff is too large to preview",
@@ -927,11 +958,8 @@ export const en = {
         refresh: "Refresh",
         refreshState: "Refresh git and {{brand}} state",
         failedRefresh: "Failed to refresh git state.",
-        emptyHiddenWhitespace: "No visible changes after hiding whitespace",
-        emptyUncommitted: "No uncommitted changes",
         seeUncommittedChanges: "See uncommitted changes",
         seeCommittedChanges: "See committed changes",
-        emptyAgainstBase: "No changes vs {{baseRef}}",
         checkingRepository: "Checking repository...",
         notRepository: "Not a git repository",
         diffMode: "Diff mode",
@@ -1069,6 +1097,16 @@ export const en = {
       deleteMessage_other: "This removes the label from {{count}} workspaces on this host.",
       offline: "This host is offline.",
       updateHost: "Update this host to manage labels.",
+    },
+  },
+  changelog: {
+    title: "What's new",
+    installed: "Installed",
+    showMore: "Show more",
+    openWebsite: "Full changelog",
+    error: {
+      title: "Unable to load the changelog",
+      description: "Check your connection and try again.",
     },
   },
   sidebar: {
@@ -1299,6 +1337,23 @@ export const en = {
     },
     daemon: {
       title: "Daemon",
+      lifecycle: {
+        owned: "Launched by this Desktop session",
+        attached: "Attached to an existing daemon",
+        ownedMessage: "This daemon was launched by this Desktop session.",
+        attachedMessage: "This daemon was not launched by this Desktop session.",
+        stopTitle: "Stop local daemon?",
+        stopMessage:
+          "{{ownership}}\nHome: {{home}}\nSupervisor PID: {{pid}}\nRunning agent work will be interrupted.",
+        stop: "Stop daemon",
+        stopping: "Stopping…",
+        stopFailed: "Unable to stop daemon",
+        pauseAttached: "Pause automatic daemon management? The attached daemon will keep running.",
+        pause: "Pause management",
+        workerUpdated: "Worker updated to {{version}}",
+        supervisorRefresh:
+          "The running supervisor retains its original code. Its launcher must stop and start it to refresh the supervisor.",
+      },
       status: {
         title: "Status",
         builtInOnly: "Only the built-in desktop daemon is shown here",
@@ -1606,6 +1661,10 @@ export const en = {
     },
   },
   pairing: {
+    hostPassword: {
+      title: "Password for {{host}}",
+      label: "Host password",
+    },
     connectionMethods: {
       title: "Add connection",
       direct: {
@@ -1943,9 +2002,12 @@ export const en = {
     groupInfo: "About {{title}}",
     sections: {
       general: "General",
+      chat: "Chat",
       appearance: "Appearance",
-      layout: "Layout",
+      sidebar: "Sidebar",
       editor: "Editor",
+      terminal: "Terminal",
+      browser: "Browser",
       shortcuts: "Shortcuts",
       integrations: "Integrations",
       notifications: "Notifications",
@@ -1968,28 +2030,31 @@ export const en = {
         },
         sources: {
           explorerFiles: {
-            label: "Selecting a file in Explorer",
+            label: "Clicking a file in the Explorer sidebar",
             description: "Open files selected in the Explorer sidebar beside your work",
           },
           diffs: {
-            label: "Opening a diff",
+            label: "Clicking a change in the Explorer sidebar or a chat",
             description: "Open diffs from Explorer and agent conversations beside your work",
           },
           chatFiles: {
-            label: "Opening a file from an agent chat",
+            label: "Clicking a file in an agent chat",
             description: "Open file links and tool-call files beside the conversation",
           },
           diffFiles: {
-            label: "Opening a file from Changes",
+            label: "Clicking a file in a diff",
             description: "Open source files selected from a diff beside it",
           },
           subagents: {
-            label: "Opening a subagent",
+            label: "Clicking a subagent in an agent chat",
             description: "Open subagents beside their parent agent",
           },
           pullRequests: {
-            label: "Opening a pull request from Changes",
+            label: "Clicking a pull request in the Explorer sidebar",
             description: "Open pull request details beside Changes",
+          },
+          serviceUrls: {
+            label: "Clicking a script's service URL",
           },
         },
       },
@@ -2028,17 +2093,21 @@ export const en = {
     },
     plugins: {
       title: "Plugins",
+      screens: {
+        open: "Open",
+        offline: "Connect to this host to open plugin settings.",
+        update: "Update this host to use plugin settings.",
+        unavailable: "This plugin settings screen is unavailable.",
+      },
       trustedTitle: "Plugins are trusted code",
       trustedDescription:
         "They run on this host and inside the app without sandboxing. Install only code you trust.",
       globalTitle: "Enable plugins",
       globalHint: "Global switch for every configured plugin",
-      directoryLabel: "Plugin directory",
-      directoryPlaceholder: "/absolute/path/on/host",
-      idLabel: "Plugin installation ID",
-      idHint: "Leave blank to use paseo-plugin.json",
-      idPlaceholder: "Manifest default",
-      install: "Install directory",
+      sourceLabel: "Plugin source",
+      sourcePlaceholder: "Directory, Git URL, or npm package",
+      docs: "Docs",
+      install: "Install plugin",
       installing: "Installing…",
       logs: {
         action: "Logs",
@@ -2051,6 +2120,7 @@ export const en = {
       },
       status: { running: "running", disabled: "disabled", failed: "failed" },
       actions: {
+        menu: "Actions for {{id}}",
         reload: "Reload",
         reloading: "Reloading…",
         enable: "Enable",
@@ -2076,6 +2146,7 @@ export const en = {
         offlineTitle: "Plugin host is offline",
         offlineDescription: "Reconnect to this host to manage its plugins.",
         updateTitle: "Update this host to manage plugins",
+        sourceUpdateTitle: "Update this host to install plugins",
         loading: "Loading plugins…",
         errorTitle: "Unable to load plugins",
         retry: "Retry",
@@ -2098,6 +2169,7 @@ export const en = {
     },
     general: {
       title: "General",
+      sending: "Sending",
       browserData: {
         title: "Browser data",
         siteData: "Cookies and site data",
@@ -2124,8 +2196,6 @@ export const en = {
         },
       },
       serviceUrls: {
-        label: "Service URLs",
-        description: "Where to open URLs from running scripts",
         options: {
           ask: "Ask",
           inApp: "In Paseo",
@@ -2149,7 +2219,6 @@ export const en = {
       toolCallDetail: {
         label: "Tool call display",
         description: "How tool calls appear in the timeline",
-        accessibilityLabel: "Select tool call display ({{value}})",
         options: {
           overview: "Summary",
           detailed: "Full detail",
@@ -2203,6 +2272,7 @@ export const en = {
     about: {
       title: "About",
       appVersion: "App version",
+      whatsNewHint: "Release notes for every version",
       thisDevice: "This device",
       connectedHosts: "Connected hosts",
       offline: "Offline",
@@ -2405,6 +2475,9 @@ export const en = {
       },
     },
     host: {
+      password: {
+        guidance: "Remove this host and add it again with the password this daemon asks for.",
+      },
       appearance: {
         title: "Appearance",
         name: {

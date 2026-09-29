@@ -300,7 +300,12 @@ describe("useFileLink", () => {
 
     await waitFor(() => {
       expect(downloadedFiles).toEqual([
-        { raw: "http://dumm.md", path: "/Users/test/project/docs/dumm.md" },
+        {
+          raw: "dumm.md",
+          path: "/Users/test/project/docs/dumm.md",
+          lineStart: undefined,
+          lineEnd: undefined,
+        },
       ]);
     });
     expect(openedFiles).toEqual([]);

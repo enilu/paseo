@@ -11,6 +11,7 @@ import {
   MAX_BACKGROUND_OPACITY,
   MIN_BACKGROUND_BLUR,
   MIN_BACKGROUND_OPACITY,
+  type CustomBackgroundFile,
   validateCustomBackgroundFile,
 } from "@/custom-background/model";
 import { useCustomBackground } from "@/custom-background/context";
@@ -21,7 +22,7 @@ import {
 } from "@/custom-background/service";
 import { useFilePicker } from "@/hooks/use-file-picker";
 import { useAppSettings } from "@/hooks/use-settings";
-import { SettingsSection } from "@/screens/settings/settings-section";
+import { SettingsSection } from "@/components/settings/headings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 import type { Theme } from "@/styles/theme";
 
@@ -66,7 +67,12 @@ export function CustomBackgroundSection() {
       if (!file) {
         return;
       }
-      const validationError = validateCustomBackgroundFile(file);
+      const backgroundFile: CustomBackgroundFile = {
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+        bytes: await file.readBytes(),
+      };
+      const validationError = validateCustomBackgroundFile(backgroundFile);
       if (validationError) {
         Alert.alert(
           t("settings.appearance.background.errorTitle"),
@@ -75,7 +81,7 @@ export function CustomBackgroundSection() {
         return;
       }
       const previousAttachment = settings.customBackground;
-      const attachment = await saveCustomBackground(file);
+      const attachment = await saveCustomBackground(backgroundFile);
       await updateSettings({ customBackground: attachment });
       await removeReplacedCustomBackground(previousAttachment, attachment);
     } catch (error) {

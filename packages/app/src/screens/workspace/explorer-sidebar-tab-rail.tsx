@@ -5,6 +5,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import Animated from "react-native-reanimated";
 import { SortableInlineList } from "@/components/sortable-inline-list";
+import { EXPLORER_TAB_RAIL_INSET } from "@/components/explorer-sidebar-layout";
 import type {
   DraggableListDragHandleProps,
   DraggableRenderItemInfo,
@@ -35,7 +36,7 @@ import {
   useWorkspaceTabLaunchCatalog,
   type WorkspaceTabLaunchItem,
 } from "@/workspace-tabs/launcher";
-import { panelSupportsHost } from "@/panels/panel-manifest";
+import { workspaceTabTargetsEqual } from "@/workspace-tabs/identity";
 import type { PanelIconProps } from "@/panels/panel-registry";
 import { panelTargetSupportsHost } from "@/plugins/workspace-panels/locations";
 import type { Theme } from "@/styles/theme";
@@ -252,7 +253,7 @@ function ExplorerSidebarConfigurationItem({
 }
 
 function catalogItemMatchesTab(item: WorkspaceTabLaunchItem, tab: WorkspaceTabDescriptor): boolean {
-  return item.panelKind === tab.target.kind;
+  return item.toggleTarget !== null && workspaceTabTargetsEqual(item.toggleTarget, tab.target);
 }
 
 export function ExplorerSidebarTabRail({
@@ -277,10 +278,7 @@ export function ExplorerSidebarTabRail({
     host: "explorer",
   });
   const singletonConfigurationItems = useMemo(
-    () =>
-      (groups.find((group) => group.id === "tabs")?.items ?? []).filter(
-        (item) => !panelSupportsHost(item.panelKind, "main"),
-      ),
+    () => groups.flatMap((group) => group.items).filter((item) => item.toggleTarget !== null),
     [groups],
   );
   const newTabLeading = useMemo(() => <ThemedPlus size={14} uniProps={mutedColorMapping} />, []);
@@ -414,7 +412,7 @@ const styles = StyleSheet.create((theme) => ({
   scrollContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: EXPLORER_TAB_RAIL_INSET,
   },
   trailingAccessory: {
     marginRight: 4,

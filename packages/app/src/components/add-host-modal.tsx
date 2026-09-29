@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useState, type ReactElement } from "react";
+import { useCallback, useMemo, useReducer, useRef, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -12,9 +12,13 @@ import {
   serializeConnectionUri,
   serializeConnectionUriForStorage,
 } from "@/utils/daemon-endpoints";
-import { DaemonConnectionTestError } from "@/utils/test-daemon-connection";
+import {
+  DaemonConnectionTestError,
+  getConnectionAuthFailureReason,
+} from "@/utils/test-daemon-connection";
 import { AdaptiveModalSheet, AdaptiveTextInput, type SheetHeader } from "./adaptive-modal-sheet";
 import { Button } from "@/components/ui/button";
+import { PairingTargetTracker } from "./pair-link-credentials";
 
 const FLEX_ONE_STYLE = { flex: 1 } as const;
 
@@ -301,8 +305,8 @@ function buildConnectionFailureCopy(input: {
   const rawLower = raw?.toLowerCase() ?? "";
   let detail: string | null = null;
 
-  if (raw === "Incorrect password" || raw === "Password required") {
-    detail = raw;
+  if (getConnectionAuthFailureReason(error)) {
+    detail = error instanceof Error ? error.message : raw;
   } else if (rawLower.includes("timed out")) {
     detail = labels.timedOut;
   } else if (
@@ -357,7 +361,8 @@ export function AddHostModal({
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const daemons = useHosts();
-  const { probeAndUpsertDirectConnection } = useHostMutations();
+  const { probeAndUpsertDirectConnection, probeAndUpsertConnectionFromOfferUrl } =
+    useHostMutations();
   const isMobile = useIsCompactFormFactor();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -371,6 +376,7 @@ export function AddHostModal({
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [advancedUri, setAdvancedUri] = useState("");
   const [inputResetKey, bumpInputResetKey] = useReducer((key: number) => key + 1, 0);
+  const advancedTarget = useRef(new PairingTargetTracker("", true));
 
   const clearInput = useCallback(() => {
     setHost("");
@@ -380,6 +386,7 @@ export function AddHostModal({
     setIsPasswordVisible(false);
     setIsAdvancedOpen(false);
     setAdvancedUri("");
+    advancedTarget.current = new PairingTargetTracker("", true);
     bumpInputResetKey();
   }, []);
 
@@ -430,8 +437,44 @@ export function AddHostModal({
     (onCancel ?? onClose)();
   }, [isSaving, clearInput, onCancel, onClose]);
 
+  const handleSaveRelay = useCallback(
+    async (relayUri: string) => {
+      try {
+        setIsSaving(true);
+        setErrorMessage("");
+        const { profile, serverId, hostname } = await probeAndUpsertConnectionFromOfferUrl(
+          relayUri,
+          password || undefined,
+        );
+        const isNewHost = !daemons.some((daemon) => daemon.serverId === serverId);
+        onSaved?.({ profile, serverId, hostname, isNewHost });
+        handleClose();
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error ? error.message : directConnectionLabels.invalidConnection,
+        );
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [
+      daemons,
+      directConnectionLabels.invalidConnection,
+      handleClose,
+      onSaved,
+      password,
+      probeAndUpsertConnectionFromOfferUrl,
+    ],
+  );
+
   const handleSave = useCallback(async () => {
     if (isSaving) return;
+
+    const relayUri = isAdvancedOpen ? advancedUri.trim() : "";
+    if (relayUri.startsWith("relay://") || relayUri.includes("#connect=")) {
+      await handleSaveRelay(relayUri);
+      return;
+    }
 
     let connection: PreparedDirectConnection;
     try {
@@ -491,10 +534,12 @@ export function AddHostModal({
       setIsSaving(false);
     }
   }, [
+    advancedUri,
     daemons,
     directConnectionLabels,
     handleClose,
     host,
+    isAdvancedOpen,
     isMobile,
     isSaving,
     onSaved,
@@ -502,6 +547,7 @@ export function AddHostModal({
     port,
     probeAndUpsertDirectConnection,
     t,
+    handleSaveRelay,
     useTls,
     requirePassword,
   ]);
@@ -514,6 +560,15 @@ export function AddHostModal({
     void handleSave();
   }, [handleSave]);
 
+  const handleChangeAdvancedUri = useCallback((next: string) => {
+    if (advancedTarget.current.changeUrl(next)) {
+      setPassword("");
+      bumpInputResetKey();
+      setErrorMessage("");
+    }
+    setAdvancedUri(next);
+  }, []);
+
   const handleToggleUseTls = useCallback(() => {
     if (isSaving) return;
     setUseTls((current) => !current);
@@ -525,6 +580,7 @@ export function AddHostModal({
 
   const handleToggleAdvanced = useCallback(() => {
     if (!isAdvancedOpen) {
+      advancedTarget.current = new PairingTargetTracker("", true);
       try {
         setAdvancedUri(
           buildConnectionUriFromDraft({ host, port, useTls, password }, directConnectionLabels),
@@ -682,7 +738,7 @@ export function AddHostModal({
             accessibilityLabel={t("pairing.direct.fields.connectionUri")}
             initialValue={advancedUri}
             resetKey={`direct-host-uri-${inputResetKey}`}
-            onChangeText={setAdvancedUri}
+            onChangeText={handleChangeAdvancedUri}
             placeholder="tcp://localhost:6767?ssl=true"
             placeholderTextColor={theme.colors.foregroundMuted}
             style={styles.input}

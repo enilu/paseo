@@ -24,6 +24,7 @@ afterEach(() => {
 function createHost(password?: string): HostProfile {
   return {
     serverId: "server-1",
+    ...(password ? { password } : {}),
     label: "Development daemon",
     appearance: defaultHostAppearance(),
     lifecycle: {},
@@ -33,7 +34,6 @@ function createHost(password?: string): HostProfile {
         type: "directTcp",
         endpoint: "10.101.0.128:6768",
         useTls: false,
-        ...(password ? { password } : {}),
       },
     ],
     preferredConnectionId: "direct:10.101.0.128:6768",

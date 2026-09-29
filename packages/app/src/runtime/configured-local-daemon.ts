@@ -26,12 +26,14 @@ export function hasConfiguredLocalDaemonPassword(
   if (!normalizedEndpoint) {
     return false;
   }
-  return hosts.some((host) =>
-    host.connections.some((connection) => {
-      if (connection.type !== "directTcp" || !connection.password?.trim()) {
-        return false;
-      }
-      return normalizeConfiguredLocalDaemonEndpoint(connection.endpoint) === normalizedEndpoint;
-    }),
-  );
+  return hosts.some((host) => {
+    if (!host.password?.trim()) {
+      return false;
+    }
+    return host.connections.some(
+      (connection) =>
+        connection.type === "directTcp" &&
+        normalizeConfiguredLocalDaemonEndpoint(connection.endpoint) === normalizedEndpoint,
+    );
+  });
 }
