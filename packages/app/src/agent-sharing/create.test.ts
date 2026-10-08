@@ -52,6 +52,43 @@ function timeline(): FetchAgentTimelinePayload {
         sourceSeqRanges: [{ startSeq: 1, endSeq: 1 }],
         collapsed: [],
       },
+      {
+        provider: "codex",
+        item: {
+          type: "tool_call",
+          callId: "call-1",
+          name: "shell",
+          status: "completed",
+          error: null,
+          detail: {
+            type: "shell",
+            command: "echo secret-shell-command",
+            output: "secret-shell-output",
+            exitCode: 0,
+          },
+        },
+        timestamp: "2026-08-25T06:29:30.000Z",
+        seqStart: 2,
+        seqEnd: 2,
+        sourceSeqRanges: [{ startSeq: 2, endSeq: 2 }],
+        collapsed: [],
+      },
+      {
+        provider: "codex",
+        item: {
+          type: "tool_call",
+          callId: "call-2",
+          name: "read",
+          status: "completed",
+          error: null,
+          detail: { type: "read", filePath: "/workspace/README.md" },
+        },
+        timestamp: "2026-08-25T06:29:40.000Z",
+        seqStart: 3,
+        seqEnd: 3,
+        sourceSeqRanges: [{ startSeq: 3, endSeq: 3 }],
+        collapsed: [],
+      },
     ],
     error: null,
   };
@@ -80,6 +117,8 @@ describe("createAgentShare", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe("https://shares.test/api/shares");
     expect(calls[0].body).not.toContain("secret prompt");
+    expect(calls[0].body).not.toContain("secret-shell-command");
+    expect(calls[0].body).not.toContain("secret-shell-output");
     expect(url).toMatch(
       /^https:\/\/shares\.test\/share\/123e4567-e89b-12d3-a456-426614174000#[A-Za-z0-9_-]{43}$/,
     );
@@ -87,7 +126,17 @@ describe("createAgentShare", () => {
     const envelope = EncryptedAgentShareSchema.parse(JSON.parse(calls[0].body));
     const snapshot = await openAgentShare(envelope, url.split("#")[1]);
     expect(snapshot.title).toBe("Review auth flow");
-    expect(snapshot.entries[0].item).toEqual({ type: "user_message", text: "secret prompt" });
+    expect(snapshot.entries.map((entry) => entry.item)).toEqual([
+      { type: "user_message", text: "secret prompt" },
+      {
+        type: "tool_call",
+        callId: "call-2",
+        name: "read",
+        status: "completed",
+        error: null,
+        detail: { type: "read", filePath: "/workspace/README.md" },
+      },
+    ]);
   });
 
   it("uses the configured self-hosted share service", async () => {

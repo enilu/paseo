@@ -27,6 +27,14 @@ export interface CreateAgentShareInput {
   request?: typeof fetch;
 }
 
+function omitShellCalls(
+  entries: FetchAgentTimelinePayload["entries"],
+): FetchAgentTimelinePayload["entries"] {
+  return entries.filter(
+    (entry) => !(entry.item.type === "tool_call" && entry.item.detail.type === "shell"),
+  );
+}
+
 export async function createAgentShare(input: CreateAgentShareInput): Promise<string> {
   const timeline = await input.client.fetchAgentTimeline(input.agentId, {
     direction: "tail",
@@ -39,7 +47,7 @@ export async function createAgentShare(input: CreateAgentShareInput): Promise<st
     version: 1,
     title: timeline.agent.title?.trim() || "Paseo session",
     sharedAt: (input.now ?? (() => new Date()))().toISOString(),
-    entries: timeline.entries,
+    entries: omitShellCalls(timeline.entries),
   };
   const sealed = await sealAgentShare(snapshot);
   const shareBaseUrl = (input.shareBaseUrl ?? configuredShareBaseUrl()).replace(/\/$/, "");
