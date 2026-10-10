@@ -1,5 +1,6 @@
 import {
   AgentShareCreateResponseSchema,
+  sanitizeAgentShareEntries,
   sealAgentShare,
   type AgentShareSnapshot,
 } from "@getpaseo/protocol/agent-share";
@@ -7,6 +8,7 @@ import type {
   FetchAgentTimelineOptions,
   FetchAgentTimelinePayload,
 } from "@getpaseo/client/internal/daemon-client";
+import type { AgentShareCreateResponse } from "@getpaseo/protocol/messages";
 
 const DEFAULT_SHARE_BASE_URL = "https://paseo.sh";
 
@@ -21,18 +23,11 @@ export interface CreateAgentShareInput {
       agentId: string,
       options?: FetchAgentTimelineOptions,
     ): Promise<FetchAgentTimelinePayload>;
+    createAgentShareAccess(agentId: string): Promise<AgentShareCreateResponse["payload"]>;
   };
   now?: () => Date;
   shareBaseUrl?: string;
   request?: typeof fetch;
-}
-
-function omitShellCalls(
-  entries: FetchAgentTimelinePayload["entries"],
-): FetchAgentTimelinePayload["entries"] {
-  return entries.filter(
-    (entry) => !(entry.item.type === "tool_call" && entry.item.detail.type === "shell"),
-  );
 }
 
 export async function createAgentShare(input: CreateAgentShareInput): Promise<string> {
@@ -42,12 +37,27 @@ export async function createAgentShare(input: CreateAgentShareInput): Promise<st
     projection: "projected",
   });
   if (!timeline.agent) throw new Error("Agent not found");
+  const access = await input.client.createAgentShareAccess(input.agentId);
+  if (!access.accessToken || !access.expiresAt || !access.relay) {
+    throw new Error(access.error ?? "Unable to create collaborative share access");
+  }
 
   const snapshot: AgentShareSnapshot = {
     version: 1,
     title: timeline.agent.title?.trim() || "Paseo session",
     sharedAt: (input.now ?? (() => new Date()))().toISOString(),
-    entries: omitShellCalls(timeline.entries),
+    entries: sanitizeAgentShareEntries(timeline.entries),
+    collaboration: {
+      agentId: input.agentId,
+      accessToken: access.accessToken,
+      expiresAt: access.expiresAt,
+      serverId: access.relay.serverId,
+      daemonPublicKeyB64: access.relay.daemonPublicKeyB64,
+      relay: {
+        endpoint: access.relay.endpoint,
+        useTls: access.relay.useTls,
+      },
+    },
   };
   const sealed = await sealAgentShare(snapshot);
   const shareBaseUrl = (input.shareBaseUrl ?? configuredShareBaseUrl()).replace(/\/$/, "");

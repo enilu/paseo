@@ -132,6 +132,69 @@ describe("SessionAuthorization", () => {
     expect(authorization.allowsOutbound(outboundMessage("rpc_error"))).toBe(true);
   });
 
+  test("agent share authority is bound to one agent and two operations", () => {
+    const authorization = new SessionAuthorization([], {
+      agentId: "agent-1",
+      expiresAt: "2999-01-01T00:00:00.000Z",
+    });
+
+    expect(
+      authorization.allowsInbound({
+        type: "fetch_agent_timeline_request",
+        agentId: "agent-1",
+        requestId: "timeline",
+      }),
+    ).toBe(true);
+    expect(
+      authorization.allowsInbound({
+        type: "send_agent_message_request",
+        agentId: "agent-1",
+        requestId: "message",
+        text: "Continue",
+        attachments: [],
+      }),
+    ).toBe(true);
+    expect(
+      authorization.allowsInbound({
+        type: "fetch_agent_timeline_request",
+        agentId: "agent-2",
+        requestId: "other-agent",
+      }),
+    ).toBe(false);
+    expect(authorization.allowsInbound(inboundMessage("fetch_agents_request"))).toBe(false);
+    expect(authorization.allowsInbound(inboundMessage("terminal_input"))).toBe(false);
+    expect(
+      authorization.allowsOutbound({
+        type: "send_agent_message_response",
+        payload: { requestId: "message", agentId: "agent-1", accepted: true, error: null },
+      }),
+    ).toBe(true);
+    expect(
+      authorization.allowsOutbound({
+        type: "send_agent_message_response",
+        payload: { requestId: "message", agentId: "agent-2", accepted: true, error: null },
+      }),
+    ).toBe(false);
+    expect(authorization.allowsOutbound(outboundMessage("agent_update"))).toBe(false);
+    expect(authorization.allowsOutbound(outboundMessage("rpc_error"))).toBe(true);
+  });
+
+  test("agent share authority stops at its expiry", () => {
+    const authorization = new SessionAuthorization([], {
+      agentId: "agent-1",
+      expiresAt: "2000-01-01T00:00:00.000Z",
+    });
+
+    expect(
+      authorization.allowsInbound({
+        type: "fetch_agent_timeline_request",
+        agentId: "agent-1",
+        requestId: "timeline",
+      }),
+    ).toBe(false);
+    expect(authorization.allowsOutbound(outboundMessage("rpc_error"))).toBe(true);
+  });
+
   test("legacy Hub authority is translated at one compatibility boundary", () => {
     expect(permissionsForLegacyHubScopes(["hub.execution.*"])).toEqual(["hub.execute"]);
     expect(permissionsForLegacyHubScopes(["*"])).toEqual([]);

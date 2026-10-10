@@ -251,12 +251,12 @@ export const fr: TranslationResources = {
   },
   agentPanel: {
     share: {
-      action: "Partager un instantané en lecture seule",
-      title: "Partager cette session ?",
+      action: "Partager la session",
+      title: "Partager et autoriser la collaboration ?",
       warning:
-        "L’instantané inclut les messages, le raisonnement et les résultats des outils. Toute personne disposant du lien peut le lire pendant 7 jours.",
+        "Le lien chiffré inclut les messages, le raisonnement et les résultats des outils hors Shell, et permet à toute personne disposant du lien d’envoyer des messages à cet agent pendant 7 jours. Votre hôte doit rester en ligne pour collaborer.",
       confirm: "Créer le lien",
-      creating: "Création de l’instantané chiffré…",
+      creating: "Création du lien de collaboration chiffré…",
       copied: "Lien de partage copié",
       failed: "Impossible de créer le lien. Réessayez.",
     },

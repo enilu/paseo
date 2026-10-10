@@ -553,13 +553,14 @@ Simple set of Expo push notification tokens. Loaded with permissive parsing (fil
 
 These small files are not validated as full Zod schemas but are persisted under `$PASEO_HOME` for daemon identity and runtime coordination.
 
-| Path                  | Format                                                         | Notes                                                                             |
-| --------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `server-id`           | Plain text, e.g. `srv_<base64url>`                             | Stable per-`$PASEO_HOME` daemon ID. Overridable via `PASEO_SERVER_ID` env.        |
-| `daemon-keypair.json` | `{ v: 2, publicKeyB64, secretKeyB64 }` (libsodium box keypair) | E2EE relay identity. Written with mode `0600`. Regenerated if file is unreadable. |
-| `paseo.pid`           | JSON `{ pid, startedAt, ... }`                                 | PID lock; prevents two daemons sharing one `$PASEO_HOME`.                         |
-| `local-credential`    | 32 random bytes encoded as base64url text                      | Rotated before each listen and deleted on shutdown; mode `0600`.                  |
-| `daemon.log`          | Pino log output                                                | Default location; path/rotation configurable via `log.file` in `config.json`.     |
+| Path                      | Format                                                           | Notes                                                                                                   |
+| ------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `server-id`               | Plain text, e.g. `srv_<base64url>`                               | Stable per-`$PASEO_HOME` daemon ID. Overridable via `PASEO_SERVER_ID` env.                              |
+| `daemon-keypair.json`     | `{ v: 2, publicKeyB64, secretKeyB64 }` (libsodium box keypair)   | E2EE relay identity. Written with mode `0600`. Regenerated if file is unreadable.                       |
+| `paseo.pid`               | JSON `{ pid, startedAt, ... }`                                   | PID lock; prevents two daemons sharing one `$PASEO_HOME`.                                               |
+| `local-credential`        | 32 random bytes encoded as base64url text                        | Rotated before each listen and deleted on shutdown; mode `0600`.                                        |
+| `agent-share-access.json` | JSON array of `{ id, agentId, tokenHash, createdAt, expiresAt }` | Seven-day collaborative-share capabilities. Only SHA-256 token hashes are persisted; writes are atomic. |
+| `daemon.log`              | Pino log output                                                  | Default location; path/rotation configurable via `log.file` in `config.json`.                           |
 
 ---
 

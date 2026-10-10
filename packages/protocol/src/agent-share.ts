@@ -6,6 +6,19 @@ export const AgentShareSnapshotSchema = z.object({
   title: z.string().trim().min(1).max(500),
   sharedAt: z.string().datetime(),
   entries: z.array(AgentTimelineEntryPayloadSchema),
+  collaboration: z
+    .object({
+      agentId: z.string().min(1),
+      accessToken: z.string().min(1),
+      expiresAt: z.string().datetime(),
+      serverId: z.string().min(1),
+      daemonPublicKeyB64: z.string().min(1),
+      relay: z.object({
+        endpoint: z.string().min(1),
+        useTls: z.boolean(),
+      }),
+    })
+    .optional(),
 });
 
 export const EncryptedAgentShareSchema = z.object({
@@ -26,6 +39,14 @@ export type AgentShareCreateResponse = z.infer<typeof AgentShareCreateResponseSc
 export interface SealedAgentShare {
   envelope: EncryptedAgentShare;
   key: string;
+}
+
+export function sanitizeAgentShareEntries<TEntry extends AgentShareSnapshot["entries"][number]>(
+  entries: TEntry[],
+): TEntry[] {
+  return entries.filter(
+    (entry) => !(entry.item.type === "tool_call" && entry.item.detail.type === "shell"),
+  );
 }
 
 function encodeBase64Url(bytes: Uint8Array): string {

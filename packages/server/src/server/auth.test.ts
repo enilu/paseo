@@ -128,6 +128,46 @@ describe("agent MCP request authorizer", () => {
 });
 
 describe("hello admission", () => {
+  test("binds an agent share credential to its granted agent", async () => {
+    expect(
+      await resolveSessionAdmission({
+        credential: { kind: "agentShare", token: "share-token" },
+        passwordHash: undefined,
+        localCredential: null,
+        transport: "relay",
+        resolveAgentShare: async (token) =>
+          token === "share-token"
+            ? {
+                id: "123e4567-e89b-12d3-a456-426614174000",
+                agentId: "agent-1",
+                expiresAt: "2026-10-17T03:00:00.000Z",
+              }
+            : null,
+      }),
+    ).toEqual({
+      admission: {
+        principalId: "agent-share:123e4567-e89b-12d3-a456-426614174000",
+        permissions: [],
+        agentShareScope: {
+          agentId: "agent-1",
+          expiresAt: "2026-10-17T03:00:00.000Z",
+        },
+      },
+    });
+  });
+
+  test("rejects an unknown agent share credential even without a daemon password", async () => {
+    expect(
+      await resolveSessionAdmission({
+        credential: { kind: "agentShare", token: "wrong-token" },
+        passwordHash: undefined,
+        localCredential: null,
+        transport: "relay",
+        resolveAgentShare: async () => null,
+      }),
+    ).toEqual({ rejection: "incorrect_password" });
+  });
+
   test("admits a stale local credential when no password is configured", async () => {
     expect(
       await resolveSessionAdmission({

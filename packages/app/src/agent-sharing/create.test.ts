@@ -99,7 +99,22 @@ describe("createAgentShare", () => {
     const calls: Array<{ url: string; body: string }> = [];
     const url = await createAgentShare({
       agentId: "agent-1",
-      client: { fetchAgentTimeline: async () => timeline() },
+      client: {
+        fetchAgentTimeline: async () => timeline(),
+        createAgentShareAccess: async () => ({
+          requestId: "share-access-1",
+          agentId: "agent-1",
+          accessToken: "agent-share-token",
+          expiresAt: "2026-09-01T06:30:00.000Z",
+          relay: {
+            serverId: "server-1",
+            endpoint: "relay.test:443",
+            useTls: true,
+            daemonPublicKeyB64: "daemon-public-key",
+          },
+          error: null,
+        }),
+      },
       now: () => new Date("2026-08-25T06:30:00.000Z"),
       shareBaseUrl: "https://shares.test",
       request: async (input, init) => {
@@ -126,6 +141,14 @@ describe("createAgentShare", () => {
     const envelope = EncryptedAgentShareSchema.parse(JSON.parse(calls[0].body));
     const snapshot = await openAgentShare(envelope, url.split("#")[1]);
     expect(snapshot.title).toBe("Review auth flow");
+    expect(snapshot.collaboration).toEqual({
+      agentId: "agent-1",
+      accessToken: "agent-share-token",
+      expiresAt: "2026-09-01T06:30:00.000Z",
+      serverId: "server-1",
+      daemonPublicKeyB64: "daemon-public-key",
+      relay: { endpoint: "relay.test:443", useTls: true },
+    });
     expect(snapshot.entries.map((entry) => entry.item)).toEqual([
       { type: "user_message", text: "secret prompt" },
       {
@@ -146,7 +169,22 @@ describe("createAgentShare", () => {
       let requestUrl = "";
       const url = await createAgentShare({
         agentId: "agent-1",
-        client: { fetchAgentTimeline: async () => timeline() },
+        client: {
+          fetchAgentTimeline: async () => timeline(),
+          createAgentShareAccess: async () => ({
+            requestId: "share-access-1",
+            agentId: "agent-1",
+            accessToken: "agent-share-token",
+            expiresAt: "2026-09-01T06:30:00.000Z",
+            relay: {
+              serverId: "server-1",
+              endpoint: "relay.test:443",
+              useTls: true,
+              daemonPublicKeyB64: "daemon-public-key",
+            },
+            error: null,
+          }),
+        },
         request: async (input) => {
           requestUrl = String(input);
           return Response.json(

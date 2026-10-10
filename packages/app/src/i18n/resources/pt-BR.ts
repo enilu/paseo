@@ -248,12 +248,12 @@ export const ptBR: TranslationResources = {
   },
   agentPanel: {
     share: {
-      action: "Compartilhar snapshot somente leitura",
-      title: "Compartilhar esta sessão?",
+      action: "Compartilhar sessão",
+      title: "Compartilhar e permitir colaboração?",
       warning:
-        "O snapshot inclui prompts, raciocínio e resultados de ferramentas. Qualquer pessoa com o link poderá lê-lo por 7 dias.",
+        "O link criptografado inclui prompts, raciocínio e resultados de ferramentas que não sejam Shell, e permite que qualquer pessoa com o link envie mensagens a este agente por 7 dias. Seu host deve permanecer online para colaborar.",
       confirm: "Criar link",
-      creating: "Criando snapshot criptografado…",
+      creating: "Criando link de colaboração criptografado…",
       copied: "Link de compartilhamento copiado",
       failed: "Não foi possível criar o link. Tente novamente.",
     },

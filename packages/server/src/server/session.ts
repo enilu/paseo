@@ -15,6 +15,8 @@ import { basename, resolve, sep } from "path";
 import { homedir } from "node:os";
 import { CLIENT_CAPS, type ClientCapability } from "@getpaseo/protocol/client-capabilities";
 import { formatPluginSourceReference } from "@getpaseo/protocol/plugin-source-reference";
+import { parseConnectionOfferFromUrl } from "@getpaseo/protocol/connection-offer";
+import { sanitizeAgentShareEntries } from "@getpaseo/protocol/agent-share";
 import {
   serializeAgentStreamEvent,
   type AgentSnapshotPayload,
@@ -139,6 +141,8 @@ import {
 } from "./agent/agent-sdk-types.js";
 import type { StoredAgentRecord } from "./agent/agent-storage.js";
 import type { AgentStorage } from "./agent/agent-storage.js";
+import type { AgentShareAccessStore } from "./agent-share-access.js";
+import { generateLocalPairingOffer } from "./pairing-offer.js";
 import {
   ImportSessionsRequestError,
   importProviderSession,
@@ -260,7 +264,11 @@ import {
 } from "./worktree-session.js";
 import { archiveByScope, type ActiveWorkspaceRef } from "./workspace-archive-service.js";
 import { WorkspaceSetupRuntime } from "./workspace-setup-runtime.js";
-import { SessionAuthorization, type DaemonPermission } from "./authorization/index.js";
+import {
+  SessionAuthorization,
+  type AgentShareScope,
+  type DaemonPermission,
+} from "./authorization/index.js";
 import {
   WorkspaceAccessAuthorization,
   WorkspaceAccessDeniedError,
@@ -451,6 +459,7 @@ export interface SessionOptions {
   browserToolsBroker?: BrowserToolsBroker | null;
   clientId: string;
   permissions: readonly DaemonPermission[];
+  agentShareScope?: { agentId: string; expiresAt: string };
   appVersion?: string | null;
   clientCapabilities?: Record<string, unknown> | null;
   onMessage: (msg: SessionOutboundMessage) => void;
@@ -467,6 +476,7 @@ export interface SessionOptions {
   worktreesRoot?: string;
   agentManager: AgentManager;
   agentStorage: AgentStorage;
+  agentShareAccessStore?: Pick<AgentShareAccessStore, "create">;
   messageReceipts: Pick<MessageReceipts, "send">;
   creationService: Pick<CreationService, "create" | "subscribe">;
   projectRegistry: ProjectRegistry;
@@ -593,6 +603,13 @@ function parseClientCapabilities(
     }
   }
   return new Set(result);
+}
+
+function createSessionAuthorization(
+  permissions: readonly DaemonPermission[],
+  agentShareScope: AgentShareScope | undefined,
+): SessionAuthorization {
+  return new SessionAuthorization(permissions, agentShareScope ?? null);
 }
 
 function sessionRequestId(message: SessionInboundMessage): string | null {
@@ -726,6 +743,8 @@ export class Session {
 
   private agentManager: AgentManager;
   private readonly agentStorage: AgentStorage;
+  private readonly agentShareAccessStore: Pick<AgentShareAccessStore, "create"> | undefined;
+  private readonly daemonRuntimeConfig: DaemonRuntimeConfig | undefined;
   private readonly projectRegistry: ProjectRegistry;
   private readonly workspaceRegistry: WorkspaceRegistry;
   private readonly workspaceAccessAuthorization: WorkspaceAccessAuthorization;
@@ -863,7 +882,7 @@ export class Session {
     } = options;
     this.browserToolsBroker = options.browserToolsBroker;
     this.clientId = clientId;
-    this.authorization = new SessionAuthorization(permissions);
+    this.authorization = createSessionAuthorization(permissions, options.agentShareScope);
     this.appVersion = appVersion ?? null;
     this.clientCapabilities = parseClientCapabilities(clientCapabilities);
     this.sessionId = uuidv4();
@@ -899,6 +918,8 @@ export class Session {
     });
     this.agentManager = agentManager;
     this.agentStorage = agentStorage;
+    this.agentShareAccessStore = options.agentShareAccessStore;
+    this.daemonRuntimeConfig = daemonRuntimeConfig;
     this.projectRegistry = projectRegistry;
     this.workspaceRegistry = workspaceRegistry;
     this.workspaceAccessAuthorization = new WorkspaceAccessAuthorization({
@@ -2661,6 +2682,8 @@ export class Session {
     switch (msg.type) {
       case "agent.detach.request":
         return this.handleDetachAgentRequest(msg.agentId, msg.requestId);
+      case "agent.share.create.request":
+        return this.handleAgentShareCreateRequest(msg);
       default:
         return undefined;
     }
@@ -7817,6 +7840,29 @@ export class Session {
       const entries = selectedTimeline.entries.filter((entry) =>
         this.supportsTimelineItem(entry.item, source),
       );
+      let payloadEntries = entries.map((entry) => {
+        const payloadEntry = {
+          provider: snapshot.provider,
+          item: entry.item,
+          timestamp: entry.timestamp,
+          seqStart: entry.seqStart,
+          seqEnd: entry.seqEnd,
+          sourceSeqRanges: entry.sourceSeqRanges,
+          turnId: undefined as string | undefined,
+          collapsed: (
+            source
+              ? this.supportsForSource(CLIENT_CAPS.reasoningMergeEnum, source)
+              : this.supports(CLIENT_CAPS.reasoningMergeEnum)
+          )
+            ? entry.collapsed
+            : entry.collapsed.filter((value) => value !== "reasoning_merge"),
+        };
+        payloadEntry.turnId = entry.turnId;
+        return payloadEntry;
+      });
+      if (this.authorization.isAgentShareSession()) {
+        payloadEntries = sanitizeAgentShareEntries(payloadEntries);
+      }
 
       this.emitForSource(
         {
@@ -7837,26 +7883,7 @@ export class Session {
             hasOlder: selectedTimeline.hasOlder,
             hasNewer: selectedTimeline.hasNewer,
             ...(msg.mergeWindow === true ? { mergeWindow: true } : {}),
-            entries: entries.map((entry) => {
-              const payloadEntry = {
-                provider: snapshot.provider,
-                item: entry.item,
-                timestamp: entry.timestamp,
-                seqStart: entry.seqStart,
-                seqEnd: entry.seqEnd,
-                sourceSeqRanges: entry.sourceSeqRanges,
-                turnId: undefined as string | undefined,
-                collapsed: (
-                  source
-                    ? this.supportsForSource(CLIENT_CAPS.reasoningMergeEnum, source)
-                    : this.supports(CLIENT_CAPS.reasoningMergeEnum)
-                )
-                  ? entry.collapsed
-                  : entry.collapsed.filter((value) => value !== "reasoning_merge"),
-              };
-              payloadEntry.turnId = entry.turnId;
-              return payloadEntry;
-            }),
+            entries: payloadEntries,
             error: null,
           },
         },
@@ -8210,6 +8237,61 @@ export class Session {
     if (stored && !stored.title && !stored.lastUserMessageAt) {
       const { provisionalTitle } = resolveCreateAgentTitles({ initialPrompt: text });
       if (provisionalTitle) await this.agentManager.setTitle(agentId, provisionalTitle);
+    }
+  }
+
+  private async handleAgentShareCreateRequest(
+    msg: Extract<SessionInboundMessage, { type: "agent.share.create.request" }>,
+  ): Promise<void> {
+    try {
+      if (!this.agentShareAccessStore) throw new Error("Collaborative sharing is unavailable");
+      const agent =
+        this.agentManager.getAgent(msg.agentId) ?? (await this.agentStorage.get(msg.agentId));
+      if (!agent) throw new Error("Agent not found");
+      const relay = this.daemonRuntimeConfig?.getRelayConfig();
+      if (!relay?.enabled) throw new Error("Enable Relay before creating a collaborative share");
+      const pairing = await generateLocalPairingOffer({
+        paseoHome: this.paseoHome,
+        relayEnabled: true,
+        relayEndpoint: relay.endpoint,
+        relayPublicEndpoint: relay.publicEndpoint,
+        relayUseTls: relay.useTls,
+        relayPublicUseTls: relay.publicUseTls,
+        appBaseUrl: this.daemonRuntimeConfig?.appBaseUrl,
+        includeQr: false,
+        logger: this.sessionLogger,
+      });
+      const offer = pairing.url ? parseConnectionOfferFromUrl(pairing.url) : null;
+      if (!offer) throw new Error("Unable to create Relay connection details");
+      const grant = await this.agentShareAccessStore.create(msg.agentId);
+      this.emit({
+        type: "agent.share.create.response",
+        payload: {
+          requestId: msg.requestId,
+          agentId: msg.agentId,
+          accessToken: grant.accessToken,
+          expiresAt: grant.expiresAt,
+          relay: {
+            serverId: offer.serverId,
+            endpoint: offer.relay.endpoint,
+            useTls: offer.relay.useTls === true,
+            daemonPublicKeyB64: offer.daemonPublicKeyB64,
+          },
+          error: null,
+        },
+      });
+    } catch (error) {
+      this.emit({
+        type: "agent.share.create.response",
+        payload: {
+          requestId: msg.requestId,
+          agentId: msg.agentId,
+          accessToken: null,
+          expiresAt: null,
+          relay: null,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
     }
   }
 
@@ -8576,6 +8658,7 @@ export class Session {
   }
 
   private emitForSource(msg: SessionOutboundMessage, source?: object): void {
+    if (!this.authorization.allowsOutbound(msg)) return;
     if (source && this.onMessageToSource) {
       msg = this.delivery.authorizeReply(msg, source);
       this.onMessageToSource(source, msg);

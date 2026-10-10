@@ -1373,6 +1373,12 @@ export const SendAgentMessageRequestSchema = z.object({
   attachments: AgentAttachmentsSchema,
 });
 
+export const AgentShareCreateRequestSchema = z.object({
+  type: z.literal("agent.share.create.request"),
+  requestId: z.string(),
+  agentId: z.string(),
+});
+
 export const WaitForFinishRequestSchema = z.object({
   type: z.literal("wait_for_finish_request"),
   requestId: z.string(),
@@ -3230,6 +3236,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   WorkspaceRecoveryRestoreRequestSchema,
   SetVoiceModeMessageSchema,
   SendAgentMessageRequestSchema,
+  AgentShareCreateRequestSchema,
   WaitForFinishRequestSchema,
   DaemonGetStatusRequestSchema,
   DaemonGetPairingOfferRequestSchema,
@@ -3573,6 +3580,8 @@ export const ServerInfoStatusPayloadSchema = z
       .object({
         // COMPAT(agentRequestReceipts): added in v0.8.0; remove gate after 2027-03-05.
         agentRequestReceipts: z.boolean().optional(),
+        // COMPAT(agentCollaborativeSharing): added in v0.10.0, remove gate after 2027-04-10.
+        agentCollaborativeSharing: z.boolean().optional(),
         // COMPAT(workspaceRequestReceipts): added in v0.8.0; remove gate after 2027-03-07.
         workspaceRequestReceipts: z.boolean().optional(),
         creationLifecycle: z.boolean().optional(),
@@ -4964,6 +4973,25 @@ export const SendAgentMessageResponseMessageSchema = z.object({
     requestId: z.string(),
     agentId: z.string(),
     accepted: z.boolean(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const AgentShareCreateResponseSchema = z.object({
+  type: z.literal("agent.share.create.response"),
+  payload: z.object({
+    requestId: z.string(),
+    agentId: z.string(),
+    accessToken: z.string().nullable(),
+    expiresAt: z.string().datetime().nullable(),
+    relay: z
+      .object({
+        serverId: z.string(),
+        endpoint: z.string(),
+        useTls: z.boolean(),
+        daemonPublicKeyB64: z.string(),
+      })
+      .nullable(),
     error: z.string().nullable(),
   }),
 });
@@ -6878,6 +6906,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   WorkspaceClearAttentionResponseSchema,
   WorkspaceMarkUnreadResponseSchema,
   SendAgentMessageResponseMessageSchema,
+  AgentShareCreateResponseSchema,
   SetVoiceModeResponseMessageSchema,
   DaemonGetStatusResponseSchema,
   DaemonGetPairingOfferResponseSchema,
@@ -7091,6 +7120,7 @@ export type AgentTimelineListPromptsResponseMessage = z.infer<
 export type AgentForkContextResponseMessage = z.infer<typeof AgentForkContextResponseMessageSchema>;
 export type CancelAgentResponseMessage = z.infer<typeof CancelAgentResponseMessageSchema>;
 export type SendAgentMessageResponseMessage = z.infer<typeof SendAgentMessageResponseMessageSchema>;
+export type AgentShareCreateResponse = z.infer<typeof AgentShareCreateResponseSchema>;
 export type SetVoiceModeResponseMessage = z.infer<typeof SetVoiceModeResponseMessageSchema>;
 export type SetAgentModeResponseMessage = z.infer<typeof SetAgentModeResponseMessageSchema>;
 export type SetAgentModelResponseMessage = z.infer<typeof SetAgentModelResponseMessageSchema>;
@@ -7196,6 +7226,7 @@ export type ProjectListRequestMessage = z.infer<typeof ProjectListRequestMessage
 export type FetchAgentRequestMessage = z.infer<typeof FetchAgentRequestMessageSchema>;
 export type AgentForkContextRequestMessage = z.infer<typeof AgentForkContextRequestMessageSchema>;
 export type SendAgentMessageRequest = z.infer<typeof SendAgentMessageRequestSchema>;
+export type AgentShareCreateRequest = z.infer<typeof AgentShareCreateRequestSchema>;
 export type WaitForFinishRequest = z.infer<typeof WaitForFinishRequestSchema>;
 export type DictationStreamStartMessage = z.infer<typeof DictationStreamStartMessageSchema>;
 export type DictationStreamChunkMessage = z.infer<typeof DictationStreamChunkMessageSchema>;
@@ -7477,6 +7508,7 @@ export const WSHelloMessageSchema = z.object({
     .discriminatedUnion("kind", [
       z.object({ kind: z.literal("password"), password: z.string() }),
       z.object({ kind: z.literal("localCredential"), token: z.string() }),
+      z.object({ kind: z.literal("agentShare"), token: z.string() }),
     ])
     .optional(),
   appVersion: z.string().optional(),

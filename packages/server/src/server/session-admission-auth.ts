@@ -13,8 +13,22 @@ export async function resolveSessionAdmission(input: {
   passwordHash: string | undefined;
   localCredential: string | null;
   transport: "direct" | "relay";
+  resolveAgentShare?: (
+    token: string,
+  ) => Promise<{ id: string; agentId: string; expiresAt: string } | null>;
 }): Promise<AdmissionResolution> {
   const { credential, passwordHash, localCredential, transport } = input;
+  if (credential?.kind === "agentShare") {
+    const grant = await input.resolveAgentShare?.(credential.token);
+    if (!grant) return { rejection: "incorrect_password" };
+    return {
+      admission: {
+        principalId: `agent-share:${grant.id}`,
+        permissions: [],
+        agentShareScope: { agentId: grant.agentId, expiresAt: grant.expiresAt },
+      },
+    };
+  }
   if (!passwordHash) {
     return { admission: { principalId: "owner", permissions: OWNER_PERMISSIONS } };
   }

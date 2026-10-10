@@ -50,6 +50,8 @@ A delegating principal can grant only authority it already possesses. A session 
 
 Workspace-scoped grants require every resource-bearing operation and outbound observation to enforce the same workspace boundary. File preview currently accepts any daemon-readable regular file, so it must gain resource enforcement before workspace-specific access ships.
 
+Collaborative agent-share links use a narrower capability session rather than a general permission grant. Each expiring capability is bound to one agent and allows only timeline reads and message sends for that exact agent. The authorization layer also filters outbound responses to that agent; listing agents, terminals, files, workspaces, and daemon management remain unavailable. These links are intended for trusted collaborators: a continued agent still runs with the host owner's configured tools and workspace authority, so the link is not a sandbox for untrusted users.
+
 ## Hub
 
 The Hub authenticates as a service principal. Its locally selected grants decide whether it may execute agents, manage the daemon, manage tunnels, or manage access.

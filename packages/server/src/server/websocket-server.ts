@@ -85,6 +85,7 @@ import {
   type DaemonAuthConfig,
 } from "./auth.js";
 import { resolveSessionAdmission } from "./session-admission-auth.js";
+import { AgentShareAccessStore } from "./agent-share-access.js";
 import {
   WebSocketRuntimeMetricsWindow,
   type WebSocketRuntimeCounters,
@@ -126,6 +127,7 @@ export interface SessionAdmission {
   principalId: string;
   permissions: readonly DaemonPermission[];
   hubExecutionAgents?: HubExecutionAgents;
+  agentShareScope?: { agentId: string; expiresAt: string };
 }
 
 interface PendingConnection {
@@ -472,6 +474,7 @@ interface SocketSessionOptions {
   onLifecycleIntent?: (intent: SessionLifecycleIntent) => void;
   hubExecutionAgents?: HubExecutionAgents;
   hubRelationships?: HubRelationshipManagement;
+  agentShareScope?: { agentId: string; expiresAt: string };
 }
 
 interface ClosePhysicalSocketParams {
@@ -537,6 +540,7 @@ export class VoiceAssistantWebSocketServer {
   private readonly daemonRuntimeConfig: DaemonRuntimeConfig | undefined;
   private readonly agentManager: AgentManager;
   private readonly agentStorage: AgentStorage;
+  private readonly agentShareAccessStore: AgentShareAccessStore;
   private readonly messageReceipts: MessageReceipts;
   private readonly creationService: CreationService;
   private readonly projectRegistry: ProjectRegistry;
@@ -680,6 +684,7 @@ export class VoiceAssistantWebSocketServer {
     this.orchestrationSkills = orchestrationSkills;
     this.agentManager = agentManager;
     this.agentStorage = agentStorage;
+    this.agentShareAccessStore = new AgentShareAccessStore(paseoHome);
     this.messageReceipts = new MessageReceipts(join(paseoHome, "agent-requests"));
     this.creationService = new CreationService(
       join(paseoHome, "creations"),
@@ -1431,6 +1436,7 @@ export class VoiceAssistantWebSocketServer {
       },
       hubExecutionAgents: admission.hubExecutionAgents,
       hubRelationships: this.hubRelationships ?? undefined,
+      agentShareScope: admission.agentShareScope,
     });
 
     const base: SessionConnectionBase = {
@@ -1458,6 +1464,7 @@ export class VoiceAssistantWebSocketServer {
       appVersion: options.appVersion,
       clientCapabilities: options.clientCapabilities,
       permissions: options.permissions,
+      agentShareScope: options.agentShareScope,
       onMessage: options.onMessage,
       onMessageToSource: options.onMessageToSource,
       onBinaryMessage: options.onBinaryMessage,
@@ -1492,6 +1499,7 @@ export class VoiceAssistantWebSocketServer {
       daemonConfigStore: this.daemonConfigStore,
       pluginRuntime: this.pluginRuntime,
       orchestrationSkills: this.orchestrationSkills,
+      agentShareAccessStore: this.agentShareAccessStore,
       mcpBaseUrl: this.mcpBaseUrl,
       stt: () => this.speech?.resolveStt() ?? null,
       sttLanguage: this.speech?.resolveSttLanguage() ?? "en",
@@ -1683,6 +1691,7 @@ export class VoiceAssistantWebSocketServer {
         passwordHash: this.passwordHash,
         localCredential: this.credentialSource?.localCredential?.() ?? null,
         transport: pending.identity.transport === "relay" ? "relay" : "direct",
+        resolveAgentShare: (token) => this.agentShareAccessStore.resolve(token),
       });
       if (this.pendingConnections.get(ws) !== pending) return false;
       if ("rejection" in resolved) {
@@ -1789,6 +1798,8 @@ export class VoiceAssistantWebSocketServer {
       features: {
         ownedSubscriptions: true,
         agentRequestReceipts: true,
+        // COMPAT(agentCollaborativeSharing): added in v0.10.0, remove gate after 2027-04-10.
+        agentCollaborativeSharing: true,
         workspaceRequestReceipts: true,
         creationLifecycle: true,
         hubAgentRpc: true,

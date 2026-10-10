@@ -125,6 +125,7 @@ import type {
   AgentSkillSelection,
   AgentSkillsStatus,
   AgentSkillsSaveResult,
+  AgentShareCreateResponse,
 } from "@getpaseo/protocol/messages";
 import type {
   AgentPermissionRequest,
@@ -5194,6 +5195,25 @@ export class DaemonClient {
       responseType: "daemon.get_pairing_offer.response",
       timeout: options?.timeout,
     });
+  }
+
+  async createAgentShareAccess(
+    agentId: string,
+    requestId?: string,
+  ): Promise<AgentShareCreateResponse["payload"]> {
+    // COMPAT(agentCollaborativeSharing): added in v0.10.0, remove gate after 2027-04-10.
+    if (this.lastServerInfoMessage?.features?.agentCollaborativeSharing !== true) {
+      throw new Error("Update the host to create collaborative shares.");
+    }
+    const payload =
+      await this.sendNamespacedCorrelatedSessionRequest<"agent.share.create.response">({
+        requestId,
+        message: { type: "agent.share.create.request", agentId },
+      });
+    if (payload.error || !payload.accessToken || !payload.expiresAt || !payload.relay) {
+      throw new Error(payload.error ?? "Unable to create collaborative share access");
+    }
+    return payload;
   }
 
   async collectDiagnostics(requestId?: string): Promise<DiagnosticsPayload> {

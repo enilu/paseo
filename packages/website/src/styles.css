@@ -880,7 +880,7 @@
     transform: translate(0, 0) rotate(0deg);
   }
 }
-/* Shared agent sessions are a standalone read-only surface. */
+/* Shared agent sessions are a standalone, capability-scoped surface. */
 .share-page {
   min-height: 100vh;
   background: #101615;
@@ -917,6 +917,29 @@
   font-size: 26px;
   font-weight: 600;
   margin: 0;
+}
+.share-session-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.share-live-status {
+  flex: 0 0 auto;
+  border: 1px solid #3a4643;
+  border-radius: 999px;
+  color: #bdc8c5;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.share-live-status-online {
+  border-color: #39745e;
+  color: #7ee2b8;
+}
+.share-live-status-error,
+.share-live-status-offline {
+  border-color: #70443f;
+  color: #ff9d94;
 }
 .share-timestamp {
   margin: 8px 0 40px;
@@ -977,6 +1000,68 @@
   margin: 0;
   padding-left: 20px;
 }
+.share-composer {
+  position: sticky;
+  bottom: 16px;
+  margin-top: 36px;
+  border: 1px solid #36413e;
+  border-radius: 14px;
+  background: rgba(24, 32, 30, 0.96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  padding: 14px;
+  backdrop-filter: blur(10px);
+}
+.share-composer textarea {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #e8eeec;
+  font: inherit;
+  line-height: 1.5;
+}
+.share-composer textarea::placeholder {
+  color: #71807c;
+}
+.share-composer textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.share-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 10px;
+  color: #92a09c;
+  font-size: 12px;
+}
+.share-composer button {
+  border: 0;
+  border-radius: 8px;
+  background: #d8f5e9;
+  color: #102019;
+  cursor: pointer;
+  font-weight: 650;
+  padding: 8px 16px;
+}
+.share-composer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.share-composer-note,
+.share-composer-error {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.share-composer-note {
+  color: #e7c57d;
+}
+.share-composer-error {
+  color: #ff9d94;
+}
 
 @media (max-width: 600px) {
   .share-page {
@@ -984,5 +1069,13 @@
   }
   .share-session {
     margin-top: 32px;
+  }
+  .share-session-heading,
+  .share-composer-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .share-composer button {
+    align-self: stretch;
   }
 }

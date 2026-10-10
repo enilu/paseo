@@ -243,12 +243,12 @@ export const en = {
   },
   agentPanel: {
     share: {
-      action: "Share read-only snapshot",
-      title: "Share this session?",
+      action: "Share session",
+      title: "Share and allow collaboration?",
       warning:
-        "The snapshot includes prompts, reasoning, and tool output. Anyone with the link can read it for 7 days.",
+        "The encrypted link includes prompts, reasoning, and non-shell tool output, and lets anyone with the link send messages to this agent for 7 days. Your host must stay online for collaboration.",
       confirm: "Create share link",
-      creating: "Creating encrypted snapshot…",
+      creating: "Creating encrypted collaboration link…",
       copied: "Share link copied",
       failed: "Couldn't create share link. Try again.",
     },
