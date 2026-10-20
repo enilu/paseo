@@ -254,6 +254,7 @@ export const ptBR: TranslationResources = {
         "O link criptografado inclui prompts, raciocínio e resultados de ferramentas que não sejam Shell, e permite que qualquer pessoa com o link envie mensagens a este agente por 7 dias. Seu host deve permanecer online para colaborar.",
       confirm: "Criar link",
       creating: "Criando link de colaboração criptografado…",
+      copyFailed: "Não foi possível copiar o link de compartilhamento. Tente novamente.",
       copied: "Link de compartilhamento copiado",
       failed: "Não foi possível criar o link. Tente novamente.",
     },

@@ -255,6 +255,7 @@ export const es: TranslationResources = {
         "El enlace cifrado incluye mensajes, razonamiento y resultados de herramientas que no sean de Shell, y permite que cualquiera con el enlace envíe mensajes a este agente durante 7 días. Tu host debe permanecer en línea para colaborar.",
       confirm: "Crear enlace",
       creating: "Creando enlace de colaboración cifrado…",
+      copyFailed: "No se pudo copiar el enlace para compartir. Inténtalo de nuevo.",
       copied: "Enlace copiado",
       failed: "No se pudo crear el enlace. Inténtalo de nuevo.",
     },

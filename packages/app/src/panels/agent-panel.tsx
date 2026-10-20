@@ -4,7 +4,6 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import type { TFunction } from "i18next";
 import { Share2, SquarePen } from "lucide-react-native";
-import * as Clipboard from "expo-clipboard";
 import React, {
   memo,
   type ReactNode,
@@ -103,6 +102,7 @@ import type { WorkspaceFileOpenRequest } from "@/workspace/file-open";
 import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { buildDraftAgentSetup, type ClientSlashCommand } from "@/client-slash-commands";
 import { createAgentShare } from "@/agent-sharing/create";
+import { ShareLinkModal } from "@/agent-sharing/share-link-modal";
 import { confirmDialog } from "@/utils/confirm-dialog";
 
 interface ChatAgentStateShape {
@@ -1395,6 +1395,8 @@ function AgentShareButton({
   const { t } = useTranslation();
   const client = useHostRuntimeClient(serverId);
   const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const closeShare = useCallback(() => setShareUrl(null), []);
 
   const share = useCallback(async () => {
     if (!client || isSharing) return;
@@ -1406,14 +1408,9 @@ function AgentShareButton({
     });
     if (!confirmed) return;
     setIsSharing(true);
-    toast.show(t("agentPanel.share.creating"), { durationMs: null });
     try {
       const url = await createAgentShare({ agentId, client });
-      await Clipboard.setStringAsync(url);
-      toast.show(t("agentPanel.share.copied"), {
-        variant: "success",
-        testID: "agent-share-success",
-      });
+      setShareUrl(url);
     } catch {
       toast.error(t("agentPanel.share.failed"));
     } finally {
@@ -1430,25 +1427,28 @@ function AgentShareButton({
   );
 
   return (
-    <Tooltip delayDuration={400} enabledOnDesktop enabledOnMobile={false}>
-      <TooltipTrigger asChild>
-        <Pressable
-          testID="agent-share-button"
-          accessibilityRole="button"
-          accessibilityLabel={t("agentPanel.share.action")}
-          disabled={disabled || isSharing || !client}
-          onPress={share}
-          style={buttonStyle}
-        >
-          {isSharing ? (
-            <ThemedLoadingSpinner size="small" uniProps={foregroundMutedColorMapping} />
-          ) : (
-            <ThemedShare2 size={16} uniProps={foregroundMutedColorMapping} />
-          )}
-        </Pressable>
-      </TooltipTrigger>
-      <TooltipContent side="left">{t("agentPanel.share.action")}</TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip delayDuration={400} enabledOnDesktop enabledOnMobile={false}>
+        <TooltipTrigger asChild>
+          <Pressable
+            testID="agent-share-button"
+            accessibilityRole="button"
+            accessibilityLabel={t("agentPanel.share.action")}
+            disabled={disabled || isSharing || !client}
+            onPress={share}
+            style={buttonStyle}
+          >
+            {isSharing ? (
+              <ThemedLoadingSpinner size="small" uniProps={foregroundMutedColorMapping} />
+            ) : (
+              <ThemedShare2 size={16} uniProps={foregroundMutedColorMapping} />
+            )}
+          </Pressable>
+        </TooltipTrigger>
+        <TooltipContent side="left">{t("agentPanel.share.action")}</TooltipContent>
+      </Tooltip>
+      {shareUrl !== null ? <ShareLinkModal url={shareUrl} onClose={closeShare} /> : null}
+    </>
   );
 }
 

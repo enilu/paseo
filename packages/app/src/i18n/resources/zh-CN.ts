@@ -253,6 +253,7 @@ export const zhCN: TranslationResources = {
         "加密链接包含提示词、推理和非 Shell 工具输出，并允许任何获得链接的人在 7 天内向此 Agent 发送消息。协作时你的 Host 必须保持在线。",
       confirm: "创建分享链接",
       creating: "正在创建加密协作链接…",
+      copyFailed: "无法复制分享链接，请重试。",
       copied: "分享链接已复制",
       failed: "无法创建分享链接，请重试。",
     },

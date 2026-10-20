@@ -249,6 +249,7 @@ export const en = {
         "The encrypted link includes prompts, reasoning, and non-shell tool output, and lets anyone with the link send messages to this agent for 7 days. Your host must stay online for collaboration.",
       confirm: "Create share link",
       creating: "Creating encrypted collaboration link…",
+      copyFailed: "Couldn't copy the share link. Try again.",
       copied: "Share link copied",
       failed: "Couldn't create share link. Try again.",
     },

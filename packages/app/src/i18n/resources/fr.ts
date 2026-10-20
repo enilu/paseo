@@ -257,6 +257,7 @@ export const fr: TranslationResources = {
         "Le lien chiffré inclut les messages, le raisonnement et les résultats des outils hors Shell, et permet à toute personne disposant du lien d’envoyer des messages à cet agent pendant 7 jours. Votre hôte doit rester en ligne pour collaborer.",
       confirm: "Créer le lien",
       creating: "Création du lien de collaboration chiffré…",
+      copyFailed: "Impossible de copier le lien de partage. Réessayez.",
       copied: "Lien de partage copié",
       failed: "Impossible de créer le lien. Réessayez.",
     },
