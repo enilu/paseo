@@ -18,6 +18,7 @@ function configuredShareBaseUrl(): string {
 
 export interface CreateAgentShareInput {
   agentId: string;
+  allowCollaboration?: boolean;
   client: {
     fetchAgentTimeline(
       agentId: string,
@@ -37,17 +38,18 @@ export async function createAgentShare(input: CreateAgentShareInput): Promise<st
     projection: "projected",
   });
   if (!timeline.agent) throw new Error("Agent not found");
-  const access = await input.client.createAgentShareAccess(input.agentId);
-  if (!access.accessToken || !access.expiresAt || !access.relay) {
-    throw new Error(access.error ?? "Unable to create collaborative share access");
-  }
-
   const snapshot: AgentShareSnapshot = {
     version: 1,
     title: timeline.agent.title?.trim() || "Paseo session",
     sharedAt: (input.now ?? (() => new Date()))().toISOString(),
     entries: sanitizeAgentShareEntries(timeline.entries),
-    collaboration: {
+  };
+  if (input.allowCollaboration) {
+    const access = await input.client.createAgentShareAccess(input.agentId);
+    if (!access.accessToken || !access.expiresAt || !access.relay) {
+      throw new Error(access.error ?? "Unable to create collaborative share access");
+    }
+    snapshot.collaboration = {
       agentId: input.agentId,
       accessToken: access.accessToken,
       expiresAt: access.expiresAt,
@@ -57,8 +59,8 @@ export async function createAgentShare(input: CreateAgentShareInput): Promise<st
         endpoint: access.relay.endpoint,
         useTls: access.relay.useTls,
       },
-    },
-  };
+    };
+  }
   const sealed = await sealAgentShare(snapshot);
   const shareBaseUrl = (input.shareBaseUrl ?? configuredShareBaseUrl()).replace(/\/$/, "");
   const response = await (input.request ?? fetch)(`${shareBaseUrl}/api/shares`, {

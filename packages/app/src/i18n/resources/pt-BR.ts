@@ -249,14 +249,17 @@ export const ptBR: TranslationResources = {
   agentPanel: {
     share: {
       action: "Compartilhar sessão",
-      title: "Compartilhar e permitir colaboração?",
+      title: "Compartilhar sessão?",
       warning:
-        "O link criptografado inclui prompts, raciocínio e resultados de ferramentas que não sejam Shell, e permite que qualquer pessoa com o link envie mensagens a este agente por 7 dias. Seu host deve permanecer online para colaborar.",
+        "O link criptografado inclui prompts, raciocínio e resultados de ferramentas que não sejam Shell. Qualquer pessoa com o link pode ver este registro por 7 dias.",
       confirm: "Criar link",
-      creating: "Criando link de colaboração criptografado…",
+      creating: "Criando link criptografado…",
       copyFailed: "Não foi possível copiar o link de compartilhamento. Tente novamente.",
       copied: "Link de compartilhamento copiado",
       failed: "Não foi possível criar o link. Tente novamente.",
+      allowCollaboration: "Permitir continuar esta sessão pelo link",
+      collaborationWarning:
+        "Qualquer pessoa com o link pode enviar mensagens a este agente por 7 dias usando suas ferramentas e permissões. Seu host deve permanecer online.",
     },
     states: {
       notFound: "Agente não encontrado",

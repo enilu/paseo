@@ -244,14 +244,17 @@ export const en = {
   agentPanel: {
     share: {
       action: "Share session",
-      title: "Share and allow collaboration?",
+      title: "Share session?",
       warning:
-        "The encrypted link includes prompts, reasoning, and non-shell tool output, and lets anyone with the link send messages to this agent for 7 days. Your host must stay online for collaboration.",
+        "The encrypted link includes prompts, reasoning, and non-shell tool output. Anyone with the link can view this snapshot for 7 days.",
       confirm: "Create share link",
-      creating: "Creating encrypted collaboration link…",
+      creating: "Creating encrypted share link…",
       copyFailed: "Couldn't copy the share link. Try again.",
       copied: "Share link copied",
       failed: "Couldn't create share link. Try again.",
+      allowCollaboration: "Allow continuing this session through the link",
+      collaborationWarning:
+        "Anyone with the link can send messages to this agent for 7 days, using your configured tools and permissions. Your host must stay online.",
     },
     states: {
       notFound: "Agent not found",

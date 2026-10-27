@@ -252,14 +252,17 @@ export const fr: TranslationResources = {
   agentPanel: {
     share: {
       action: "Partager la session",
-      title: "Partager et autoriser la collaboration ?",
+      title: "Partager la session ?",
       warning:
-        "Le lien chiffré inclut les messages, le raisonnement et les résultats des outils hors Shell, et permet à toute personne disposant du lien d’envoyer des messages à cet agent pendant 7 jours. Votre hôte doit rester en ligne pour collaborer.",
+        "Le lien chiffré inclut les messages, le raisonnement et les résultats des outils hors Shell. Toute personne ayant le lien peut consulter cet instantané pendant 7 jours.",
       confirm: "Créer le lien",
-      creating: "Création du lien de collaboration chiffré…",
+      creating: "Création du lien chiffré…",
       copyFailed: "Impossible de copier le lien de partage. Réessayez.",
       copied: "Lien de partage copié",
       failed: "Impossible de créer le lien. Réessayez.",
+      allowCollaboration: "Autoriser la poursuite de la session via le lien",
+      collaborationWarning:
+        "Toute personne ayant le lien peut envoyer des messages à cet agent pendant 7 jours avec vos outils et autorisations. Votre hôte doit rester en ligne.",
     },
     states: {
       notFound: "Agentintrouvable",

@@ -248,14 +248,17 @@ export const zhCN: TranslationResources = {
   agentPanel: {
     share: {
       action: "分享会话",
-      title: "分享并允许协作？",
+      title: "分享会话？",
       warning:
-        "加密链接包含提示词、推理和非 Shell 工具输出，并允许任何获得链接的人在 7 天内向此 Agent 发送消息。协作时你的 Host 必须保持在线。",
+        "加密链接包含提示词、推理和非 Shell 工具输出。获得链接的人可在 7 天内查看这份历史快照。",
       confirm: "创建分享链接",
-      creating: "正在创建加密协作链接…",
+      creating: "正在创建加密分享链接…",
       copyFailed: "无法复制分享链接，请重试。",
       copied: "分享链接已复制",
       failed: "无法创建分享链接，请重试。",
+      allowCollaboration: "允许通过链接继续会话",
+      collaborationWarning:
+        "获得链接的人可在 7 天内向此 Agent 发送消息，并使用你配置的工具和权限。你的 Host 必须保持在线。",
     },
     states: {
       notFound: "未找到 Agent",

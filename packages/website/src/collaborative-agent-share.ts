@@ -21,7 +21,7 @@ export interface CollaborativeAgentShareConnection {
 }
 
 const POLL_INTERVAL_MS = 1500;
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 60_000;
 
 export function connectCollaborativeAgentShare(
   collaboration: NonNullable<AgentShareSnapshot["collaboration"]>,

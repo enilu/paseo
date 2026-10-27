@@ -101,9 +101,7 @@ import { applyLegacyDaemonWorkspaceOwnership } from "@/workspace/legacy-daemon-w
 import type { WorkspaceFileOpenRequest } from "@/workspace/file-open";
 import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { buildDraftAgentSetup, type ClientSlashCommand } from "@/client-slash-commands";
-import { createAgentShare } from "@/agent-sharing/create";
-import { ShareLinkModal } from "@/agent-sharing/share-link-modal";
-import { confirmDialog } from "@/utils/confirm-dialog";
+import { ShareSessionModal } from "@/agent-sharing/share-session-modal";
 
 interface ChatAgentStateShape {
   serverId: string | null;
@@ -1282,7 +1280,6 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
           serverId={serverId}
           agentId={agentId}
           disabled={isArchivingCurrentAgent}
-          toast={toastApi}
         />
       ) : null}
 
@@ -1385,38 +1382,16 @@ function AgentShareButton({
   serverId,
   agentId,
   disabled,
-  toast,
 }: {
   serverId: string;
   agentId: string;
   disabled: boolean;
-  toast: ToastApi;
 }) {
   const { t } = useTranslation();
   const client = useHostRuntimeClient(serverId);
-  const [isSharing, setIsSharing] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const closeShare = useCallback(() => setShareUrl(null), []);
-
-  const share = useCallback(async () => {
-    if (!client || isSharing) return;
-    const confirmed = await confirmDialog({
-      title: t("agentPanel.share.title"),
-      message: t("agentPanel.share.warning"),
-      confirmLabel: t("agentPanel.share.confirm"),
-      cancelLabel: t("common.actions.cancel"),
-    });
-    if (!confirmed) return;
-    setIsSharing(true);
-    try {
-      const url = await createAgentShare({ agentId, client });
-      setShareUrl(url);
-    } catch {
-      toast.error(t("agentPanel.share.failed"));
-    } finally {
-      setIsSharing(false);
-    }
-  }, [agentId, client, isSharing, t, toast]);
+  const [isOpen, setIsOpen] = useState(false);
+  const closeShare = useCallback(() => setIsOpen(false), []);
+  const share = useCallback(() => setIsOpen(true), []);
 
   const buttonStyle = useCallback(
     ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
@@ -1434,20 +1409,18 @@ function AgentShareButton({
             testID="agent-share-button"
             accessibilityRole="button"
             accessibilityLabel={t("agentPanel.share.action")}
-            disabled={disabled || isSharing || !client}
+            disabled={disabled || !client}
             onPress={share}
             style={buttonStyle}
           >
-            {isSharing ? (
-              <ThemedLoadingSpinner size="small" uniProps={foregroundMutedColorMapping} />
-            ) : (
-              <ThemedShare2 size={16} uniProps={foregroundMutedColorMapping} />
-            )}
+            <ThemedShare2 size={16} uniProps={foregroundMutedColorMapping} />
           </Pressable>
         </TooltipTrigger>
         <TooltipContent side="left">{t("agentPanel.share.action")}</TooltipContent>
       </Tooltip>
-      {shareUrl !== null ? <ShareLinkModal url={shareUrl} onClose={closeShare} /> : null}
+      {isOpen && client ? (
+        <ShareSessionModal agentId={agentId} client={client} onClose={closeShare} />
+      ) : null}
     </>
   );
 }

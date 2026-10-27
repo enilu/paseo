@@ -99,6 +99,7 @@ describe("createAgentShare", () => {
     const calls: Array<{ url: string; body: string }> = [];
     const url = await createAgentShare({
       agentId: "agent-1",
+      allowCollaboration: true,
       client: {
         fetchAgentTimeline: async () => timeline(),
         createAgentShareAccess: async () => ({
@@ -162,31 +163,37 @@ describe("createAgentShare", () => {
     ]);
   });
 
-  it("uses the configured self-hosted share service", async () => {
+  it("defaults to a read-only share without requesting collaboration access", async () => {
     const previous = process.env.EXPO_PUBLIC_PASEO_SHARE_BASE_URL;
     process.env.EXPO_PUBLIC_PASEO_SHARE_BASE_URL = "https://agent.example/";
     try {
       let requestUrl = "";
+      let requestBody = "";
+      let accessRequests = 0;
       const url = await createAgentShare({
         agentId: "agent-1",
         client: {
           fetchAgentTimeline: async () => timeline(),
-          createAgentShareAccess: async () => ({
-            requestId: "share-access-1",
-            agentId: "agent-1",
-            accessToken: "agent-share-token",
-            expiresAt: "2026-09-01T06:30:00.000Z",
-            relay: {
-              serverId: "server-1",
-              endpoint: "relay.test:443",
-              useTls: true,
-              daemonPublicKeyB64: "daemon-public-key",
-            },
-            error: null,
-          }),
+          createAgentShareAccess: async () => {
+            accessRequests++;
+            return {
+              requestId: "share-access-1",
+              agentId: "agent-1",
+              accessToken: "agent-share-token",
+              expiresAt: "2026-09-01T06:30:00.000Z",
+              relay: {
+                serverId: "server-1",
+                endpoint: "relay.test:443",
+                useTls: true,
+                daemonPublicKeyB64: "daemon-public-key",
+              },
+              error: null,
+            };
+          },
         },
-        request: async (input) => {
+        request: async (input, init) => {
           requestUrl = String(input);
+          requestBody = String(init?.body);
           return Response.json(
             {
               shareId: "123e4567-e89b-12d3-a456-426614174000",
@@ -199,6 +206,10 @@ describe("createAgentShare", () => {
 
       expect(requestUrl).toBe("https://agent.example/api/shares");
       expect(url).toMatch(/^https:\/\/agent\.example\/share\//);
+      expect(accessRequests).toBe(0);
+      const envelope = EncryptedAgentShareSchema.parse(JSON.parse(requestBody));
+      const snapshot = await openAgentShare(envelope, url.split("#")[1]);
+      expect(snapshot.collaboration).toBeUndefined();
     } finally {
       if (previous === undefined) delete process.env.EXPO_PUBLIC_PASEO_SHARE_BASE_URL;
       else process.env.EXPO_PUBLIC_PASEO_SHARE_BASE_URL = previous;

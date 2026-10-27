@@ -250,14 +250,17 @@ export const es: TranslationResources = {
   agentPanel: {
     share: {
       action: "Compartir sesión",
-      title: "¿Compartir y permitir la colaboración?",
+      title: "¿Compartir sesión?",
       warning:
-        "El enlace cifrado incluye mensajes, razonamiento y resultados de herramientas que no sean de Shell, y permite que cualquiera con el enlace envíe mensajes a este agente durante 7 días. Tu host debe permanecer en línea para colaborar.",
+        "El enlace cifrado incluye mensajes, razonamiento y resultados de herramientas que no sean de Shell. Cualquiera con el enlace puede ver esta instantánea durante 7 días.",
       confirm: "Crear enlace",
-      creating: "Creando enlace de colaboración cifrado…",
+      creating: "Creando enlace cifrado…",
       copyFailed: "No se pudo copiar el enlace para compartir. Inténtalo de nuevo.",
       copied: "Enlace copiado",
       failed: "No se pudo crear el enlace. Inténtalo de nuevo.",
+      allowCollaboration: "Permitir continuar esta sesión mediante el enlace",
+      collaborationWarning:
+        "Cualquiera con el enlace puede enviar mensajes a este agente durante 7 días con tus herramientas y permisos. Tu host debe permanecer en línea.",
     },
     states: {
       notFound: "Agentno encontrado",
