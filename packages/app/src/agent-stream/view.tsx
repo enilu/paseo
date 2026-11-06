@@ -54,7 +54,6 @@ import type { AgentScreenAgent } from "@/hooks/use-agent-screen-state-machine";
 import { useSessionStore } from "@/stores/session-store";
 import { useRevealedText } from "@/hooks/use-revealed-text";
 import { useFileExplorerActions } from "@/hooks/use-file-explorer-actions";
-import { useFileDownload } from "@/hooks/use-file-download";
 import { useLoadOlderAgentHistory } from "@/hooks/use-load-older-agent-history";
 import { useSettings } from "@/hooks/use-settings";
 import type { ToastApi } from "@/components/toast-host";
@@ -403,11 +402,6 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
       workspaceId: context.workspaceId,
       workspaceRoot,
     });
-    const downloadWorkspaceFile = useFileDownload({
-      serverId: resolvedServerId,
-      workspaceId: context.workspaceId,
-      workspaceRoot,
-    });
     const agentHistoryPagination = useLoadOlderAgentHistory({
       serverId: resolvedServerId,
       agentId,
@@ -501,23 +495,6 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
         });
       },
     );
-
-    const handleInlinePathDownload = useStableEvent((target: InlinePathTarget) => {
-      if (!target.path) {
-        return;
-      }
-      const normalized = normalizeInlinePathTarget(target.path, context.cwd);
-      if (!normalized?.file || normalized.file.startsWith("/") || normalized.file.startsWith("~")) {
-        toast?.show(t("common.errors.noFileFound", { token: target.path }), {
-          variant: "error",
-        });
-        return;
-      }
-      downloadWorkspaceFile({
-        fileName: normalized.file.split("/").at(-1) ?? normalized.file,
-        path: normalized.file,
-      });
-    });
 
     const handleToolCallOpenFile = useStableEvent((filePath: string) => {
       handleInlinePathPress({ raw: filePath, path: filePath }, "preferred");
@@ -743,7 +720,6 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
             serverId={resolvedServerId}
             workspaceRoot={workspaceRoot}
             onOpenWorkspaceFile={handleInlinePathPress}
-            onDownloadWorkspaceFile={handleInlinePathDownload}
             toast={toast}
           >
             <ChatFindExpansion messageId={getStreamItemMessageId(item)}>
@@ -764,15 +740,7 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
           </AssistantFileLinkResolverProvider>
         );
       },
-      [
-        agentId,
-        client,
-        handleInlinePathDownload,
-        handleInlinePathPress,
-        resolvedServerId,
-        toast,
-        workspaceRoot,
-      ],
+      [agentId, client, handleInlinePathPress, resolvedServerId, toast, workspaceRoot],
     );
 
     const renderThoughtItem = useCallback(

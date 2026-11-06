@@ -3,12 +3,10 @@ import { File as FSFile, Paths } from "expo-file-system";
 import * as LegacyFileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import type { HostProfile } from "@/types/host-connection";
-import type { ActiveConnection } from "@/runtime/host-runtime";
-import type { FileReadResult } from "@getpaseo/client/internal/daemon-client";
+import { buildDaemonWebSocketUrl } from "@/utils/daemon-endpoints";
 import { openExternalUrl } from "@/utils/open-external-url";
 import { isWeb } from "@/constants/platform";
 import { i18n } from "@/i18n/i18next";
-import { resolveDaemonDownloadTarget } from "./download-target";
 
 interface DownloadProgress {
   percent: number;
@@ -23,7 +21,6 @@ export interface Download {
   serverId: string;
   scopeId: string;
   fileName: string;
-  path: string;
   status: "downloading" | "complete" | "error";
   message?: string;
   progress?: DownloadProgress;
@@ -40,14 +37,12 @@ interface DownloadState {
     fileName: string;
     path: string;
     daemonProfile: HostProfile | undefined;
-    activeConnection: ActiveConnection | null;
     requestFileDownloadToken: (path: string) => Promise<{
       token: string | null;
       fileName: string | null;
       mimeType: string | null;
       error: string | null;
     }>;
-    readFile: (path: string) => Promise<FileReadResult>;
   }) => Promise<void>;
 
   updateProgress: (id: string, progress: DownloadProgress) => void;
@@ -71,9 +66,7 @@ export const useDownloadStore = create<DownloadState>()((set, get) => ({
     fileName,
     path,
     daemonProfile,
-    activeConnection,
     requestFileDownloadToken,
-    readFile,
   }) => {
     const id = generateDownloadId();
     const download: Download = {
@@ -81,7 +74,6 @@ export const useDownloadStore = create<DownloadState>()((set, get) => ({
       serverId,
       scopeId,
       fileName,
-      path,
       status: "downloading",
       startedAt: Date.now(),
     };
@@ -92,38 +84,25 @@ export const useDownloadStore = create<DownloadState>()((set, get) => ({
     }));
 
     try {
-      const downloadTarget = resolveDaemonDownloadTarget(daemonProfile, activeConnection);
-      if (!downloadTarget.baseUrl) {
-        const file = await readFile(path);
-        const resolvedFileName = fileName.trim() || getFileNameFromPath(file.path);
-        await saveDownloadedBytes({
-          bytes: file.bytes,
-          mimeType: file.mime,
-          fileName: resolvedFileName,
-        });
-        get().completeDownload(id);
-        return;
-      }
-
       const tokenResponse = await requestFileDownloadToken(path);
       if (tokenResponse.error || !tokenResponse.token) {
         throw new Error(tokenResponse.error ?? i18n.t("downloads.requestTokenFailed"));
       }
 
+      const downloadTarget = resolveDaemonDownloadTarget(daemonProfile);
+      if (!downloadTarget.baseUrl) {
+        throw new Error(i18n.t("downloads.hostUnavailable"));
+      }
+
       const resolvedFileName = tokenResponse.fileName ?? fileName;
-      const downloadUrl = buildDownloadUrl(downloadTarget.baseUrl, tokenResponse.token);
+      const downloadUrl = buildDownloadUrl(
+        downloadTarget.baseUrl,
+        tokenResponse.token,
+        isWeb ? downloadTarget.authCredentials : null,
+      );
 
       if (isWeb) {
-        try {
-          await downloadBrowserUrl(downloadUrl, resolvedFileName, downloadTarget.authHeader);
-        } catch {
-          const file = await readFile(path);
-          await saveDownloadedBytes({
-            bytes: file.bytes,
-            mimeType: file.mime,
-            fileName: resolvedFileName,
-          });
-        }
+        triggerBrowserDownload(downloadUrl, resolvedFileName);
         get().completeDownload(id);
         return;
       }
@@ -259,9 +238,64 @@ function findMostRecentDownloadId(downloads: Map<string, Download>): string | nu
   return mostRecent?.id ?? null;
 }
 
-function buildDownloadUrl(baseUrl: string, token: string): string {
+interface DownloadTarget {
+  baseUrl: string | null;
+  authHeader: string | null;
+  authCredentials: { username: string; password: string } | null;
+}
+
+function resolveDaemonDownloadTarget(daemon?: HostProfile): DownloadTarget {
+  const connection = daemon?.connections.find((conn) => conn.type === "directTcp") ?? null;
+  if (!connection) {
+    return { baseUrl: null, authHeader: null, authCredentials: null };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(
+      buildDaemonWebSocketUrl(connection.endpoint, { useTls: connection.useTls ?? false }),
+    );
+  } catch {
+    return { baseUrl: null, authHeader: null, authCredentials: null };
+  }
+
+  if (parsed.protocol === "ws:") {
+    parsed.protocol = "http:";
+  } else if (parsed.protocol === "wss:") {
+    parsed.protocol = "https:";
+  }
+
+  let authCredentials: { username: string; password: string } | null = null;
+  if (parsed.username || parsed.password) {
+    authCredentials = {
+      username: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password),
+    };
+    parsed.username = "";
+    parsed.password = "";
+  }
+
+  parsed.pathname = parsed.pathname.replace(/\/ws\/?$/, "/");
+
+  const baseUrl = parsed.origin;
+  const authHeader = authCredentials
+    ? `Basic ${btoa(`${authCredentials.username}:${authCredentials.password}`)}`
+    : null;
+
+  return { baseUrl, authHeader, authCredentials };
+}
+
+function buildDownloadUrl(
+  baseUrl: string,
+  token: string,
+  authCredentials: { username: string; password: string } | null,
+): string {
   const url = new URL("/api/files/download", baseUrl);
   url.searchParams.set("token", token);
+  if (authCredentials) {
+    url.username = authCredentials.username;
+    url.password = authCredentials.password;
+  }
   return url.toString();
 }
 
@@ -280,57 +314,6 @@ function triggerBrowserDownload(url: string, fileName: string) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-}
-
-async function downloadBrowserUrl(
-  url: string,
-  fileName: string,
-  authHeader: string | null,
-): Promise<void> {
-  const response = await fetch(
-    url,
-    authHeader ? { headers: { Authorization: authHeader } } : undefined,
-  );
-  if (!response.ok) {
-    throw new Error(i18n.t("downloads.failed"));
-  }
-  const objectUrl = URL.createObjectURL(await response.blob());
-  triggerBrowserDownload(objectUrl, fileName);
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
-}
-
-async function saveDownloadedBytes(input: {
-  bytes: Uint8Array;
-  mimeType: string;
-  fileName: string;
-}): Promise<void> {
-  if (isWeb) {
-    if (typeof document === "undefined" || typeof URL.createObjectURL !== "function") {
-      throw new Error(i18n.t("downloads.failed"));
-    }
-    const buffer = new ArrayBuffer(input.bytes.byteLength);
-    new Uint8Array(buffer).set(input.bytes);
-    const objectUrl = URL.createObjectURL(new Blob([buffer], { type: input.mimeType }));
-    triggerBrowserDownload(objectUrl, input.fileName);
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
-    return;
-  }
-
-  const targetFile = resolveDownloadTargetFile(input.fileName);
-  targetFile.write(input.bytes);
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(targetFile.uri, {
-      mimeType: input.mimeType,
-      dialogTitle: input.fileName
-        ? i18n.t("downloads.shareFileNamed", { fileName: input.fileName })
-        : i18n.t("downloads.shareFile"),
-    });
-  }
-}
-
-function getFileNameFromPath(path: string): string {
-  const normalized = path.replace(/\\/g, "/");
-  return normalized.slice(normalized.lastIndexOf("/") + 1) || "download";
 }
 
 function resolveDownloadTargetFile(fileName: string): FSFile {
